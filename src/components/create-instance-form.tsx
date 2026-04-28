@@ -5,6 +5,7 @@ import { createFeedbackInstance } from "@/app/actions";
 
 export default function CreateInstanceForm() {
   const [title, setTitle] = useState("");
+  const [numberOfStudents, setNumberOfStudents] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string; joinCode?: string } | null>(null);
 
@@ -13,10 +14,11 @@ export default function CreateInstanceForm() {
     setIsSubmitting(true);
     setMessage(null);
 
-    const result = await createFeedbackInstance(title);
+    const result = await createFeedbackInstance(title, numberOfStudents);
 
     if (result.success) {
       setTitle("");
+      setNumberOfStudents(1);
       setMessage({
         type: "success",
         text: "Feedback instance created successfully!",
@@ -41,6 +43,22 @@ export default function CreateInstanceForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter instance title"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="numberOfStudents" className="block text-sm font-medium mb-1">
+          Number of Students
+        </label>
+        <input
+          id="numberOfStudents"
+          type="number"
+          min="1"
+          value={numberOfStudents}
+          onChange={(e) => setNumberOfStudents(parseInt(e.target.value) || 1)}
+          placeholder="Enter number of students"
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={isSubmitting}
         />
