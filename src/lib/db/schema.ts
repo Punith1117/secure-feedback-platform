@@ -1,4 +1,5 @@
-import { boolean, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const admin = pgTable("admin", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -17,8 +18,24 @@ export const feedbackInstances = pgTable("feedback_instances", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const studentAccessCodes = pgTable("student_access_codes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  instanceId: uuid("instance_id")
+    .notNull()
+    .references(() => feedbackInstances.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 8 }).notNull().unique(),
+  used: boolean("used").default(false).notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  instanceIdIdx: index("student_access_codes_instance_id_idx").on(table.instanceId),
+}));
+
 export type Admin = typeof admin.$inferSelect;
 export type NewAdmin = typeof admin.$inferInsert;
 
 export type FeedbackInstance = typeof feedbackInstances.$inferSelect;
 export type NewFeedbackInstance = typeof feedbackInstances.$inferInsert;
+
+export type StudentAccessCode = typeof studentAccessCodes.$inferSelect;
+export type NewStudentAccessCode = typeof studentAccessCodes.$inferInsert;
