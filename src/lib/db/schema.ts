@@ -11,12 +11,15 @@ export const admin = pgTable("admin", {
 
 export const feedbackInstances = pgTable("feedback_instances", {
   id: uuid("id").defaultRandom().primaryKey(),
+  adminId: uuid("admin_id").notNull().references(() => admin.id, { onDelete: "cascade" }),
   joinCode: varchar("join_code", { length: 8 }).notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  adminIdIdx: index("feedback_instances_admin_id_idx").on(table.adminId),
+}));
 
 export const studentAccessCodes = pgTable("student_access_codes", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -29,6 +32,17 @@ export const studentAccessCodes = pgTable("student_access_codes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   instanceIdIdx: index("student_access_codes_instance_id_idx").on(table.instanceId),
+}));
+
+export const adminRelations = relations(admin, ({ many }) => ({
+  feedbackInstances: many(feedbackInstances),
+}));
+
+export const feedbackInstanceRelations = relations(feedbackInstances, ({ one }) => ({
+  admin: one(admin, {
+    fields: [feedbackInstances.adminId],
+    references: [admin.id],
+  }),
 }));
 
 export type Admin = typeof admin.$inferSelect;

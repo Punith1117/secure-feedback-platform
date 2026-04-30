@@ -1,0 +1,1 @@
+ALTER TABLE "feedback_instances" ALTER COLUMN "admin_id" SET NOT NULL;

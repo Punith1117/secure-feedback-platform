@@ -19,6 +19,7 @@ export async function createFeedbackInstance(title: string, numberOfStudents: nu
 
   try {
     const [instance] = await db.insert(feedbackInstances).values({
+      adminId: "80cb8263-54ad-4b94-86a2-166d73ae96e4",
       title: trimmedTitle,
       joinCode,
       // isActive, createdAt, updatedAt rely on database defaults
