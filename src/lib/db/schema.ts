@@ -34,14 +34,34 @@ export const studentAccessCodes = pgTable("student_access_codes", {
   instanceIdIdx: index("student_access_codes_instance_id_idx").on(table.instanceId),
 }));
 
+export const courses = pgTable("courses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  instanceId: uuid("instance_id")
+    .notNull()
+    .references(() => feedbackInstances.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  instanceIdIdx: index("courses_instance_id_idx").on(table.instanceId),
+}));
+
 export const adminRelations = relations(admin, ({ many }) => ({
   feedbackInstances: many(feedbackInstances),
 }));
 
-export const feedbackInstanceRelations = relations(feedbackInstances, ({ one }) => ({
+export const feedbackInstanceRelations = relations(feedbackInstances, ({ one, many }) => ({
   admin: one(admin, {
     fields: [feedbackInstances.adminId],
     references: [admin.id],
+  }),
+  courses: many(courses),
+}));
+
+export const courseRelations = relations(courses, ({ one }) => ({
+  feedbackInstance: one(feedbackInstances, {
+    fields: [courses.instanceId],
+    references: [feedbackInstances.id],
   }),
 }));
 
@@ -53,3 +73,6 @@ export type NewFeedbackInstance = typeof feedbackInstances.$inferInsert;
 
 export type StudentAccessCode = typeof studentAccessCodes.$inferSelect;
 export type NewStudentAccessCode = typeof studentAccessCodes.$inferInsert;
+
+export type Course = typeof courses.$inferSelect;
+export type NewCourse = typeof courses.$inferInsert;
