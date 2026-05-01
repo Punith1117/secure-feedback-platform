@@ -31,7 +31,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ join_
         </div>
         <p className="mb-8 text-center text-slate-600">Please provide your feedback for each course</p>
 
-        <StudentFeedbackForm courses={courses} />
+        <StudentFeedbackForm courses={courses} joinCode={joinCode} />
       </div>
     </div>
   );
