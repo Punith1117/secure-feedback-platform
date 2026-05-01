@@ -1,4 +1,5 @@
 import { getCoursesByInstanceIdForStudent, getFeedbackInstanceForStudent } from "@/app/actions";
+import AccessCodeInput from "@/components/access-code-input";
 import StudentFeedbackForm from "@/components/student-feedback-form";
 
 export default async function FeedbackPage({ params }: { params: Promise<{ join_code: string }> }) {
@@ -24,7 +25,10 @@ export default async function FeedbackPage({ params }: { params: Promise<{ join_
   return (
     <div className="min-h-screen bg-slate-50 p-4">
       <div className="mx-auto max-w-3xl py-8">
-        <h1 className="mb-8 text-center text-3xl font-bold text-slate-800">{instance.title}</h1>
+        <div className="mb-8 flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-slate-800">{instance.title}</h1>
+          <AccessCodeInput />
+        </div>
         <p className="mb-8 text-center text-slate-600">Please provide your feedback for each course</p>
 
         <StudentFeedbackForm courses={courses} />
