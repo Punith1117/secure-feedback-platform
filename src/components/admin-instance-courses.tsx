@@ -96,7 +96,7 @@ export default function AdminInstanceCourses({
   }
 
 return (
-    <div className="space-y-8 w-full max-w-3xl px-4 py-8">
+    <div className="space-y-8 max-w-3xl px-4 py-8">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6">
           <p className="text-sm text-slate-500">Admin instance</p>
@@ -106,7 +106,7 @@ return (
                 type="text"
                 value={editedTitle}
                 onChange={(event) => setEditedTitle(event.target.value)}
-                className="flex-1 rounded-2xl border border-slate-300 px-4 py-2 text-xl font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                className="flex-1 rounded-2xl border border-slate-300 px-2 py-1 text-base font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 disabled={isSubmitting}
               />
               <div className="flex gap-2">

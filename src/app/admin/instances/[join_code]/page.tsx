@@ -1,4 +1,5 @@
-import { getCoursesByInstanceId, getInstanceByJoinCode } from "@/app/actions";
+import { getAccessCodesByInstanceId, getCoursesByInstanceId, getInstanceByJoinCode } from "@/app/actions";
+import AdminInstanceAccessCodes from "@/components/admin-instance-access-codes";
 import AdminInstanceCourses from "@/components/admin-instance-courses";
 
 export default async function Page({ params }: { params: Promise<{ join_code: string }> }) {
@@ -20,14 +21,21 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
   const coursesResult = await getCoursesByInstanceId(instance.id);
   const courses = coursesResult.success ? coursesResult.courses : [];
 
+  const accessCodesResult = await getAccessCodesByInstanceId(instance.id);
+  const accessCodes = accessCodesResult.success ? accessCodesResult.accessCodes : [];
+
   return (
     <div className="min-h-screen bg-slate-50 p-4">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 py-8">
+      <div className="mx-auto flex max-w-5xl flex gap-6 py-8">
         <AdminInstanceCourses
           instanceId={instanceResult.instance.id}
           instanceTitle={instanceResult.instance.title}
           joinCode={instanceResult.instance.joinCode}
           initialCourses={courses}
+        />
+        <AdminInstanceAccessCodes
+          instanceId={instanceResult.instance.id}
+          initialAccessCodes={accessCodes}
         />
       </div>
     </div>

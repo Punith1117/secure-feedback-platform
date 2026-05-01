@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { courses, feedbackInstances, studentAccessCodes } from "@/lib/db/schema";
-import type { Course, FeedbackInstance } from "@/lib/db/schema";
+import type { Course, FeedbackInstance, StudentAccessCode } from "@/lib/db/schema";
 
 const ADMIN_ID = "1ca9a886-5192-47e6-9a10-0f356dac14dc";
 
@@ -210,5 +210,30 @@ export async function deleteCourse(
   } catch (error) {
     console.error("Failed to delete course:", error);
     return { success: false, error: "Failed to delete course" };
+  }
+}
+
+export async function getAccessCodesByInstanceId(
+  instanceId: string,
+): Promise<{ success: true; accessCodes: StudentAccessCode[] } | { success: false; error: string }> {
+  if (!isValidUuid(instanceId)) {
+    return { success: false, error: "Valid feedback instance ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId);
+  if (!ownership.success) {
+    return ownership;
+  }
+
+  try {
+    const accessCodesResult = await db
+      .select()
+      .from(studentAccessCodes)
+      .where(eq(studentAccessCodes.instanceId, instanceId));
+
+    return { success: true, accessCodes: accessCodesResult };
+  } catch (error) {
+    console.error("Failed to fetch access codes for instance:", error);
+    return { success: false, error: "Failed to fetch access codes" };
   }
 }
