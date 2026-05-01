@@ -30,12 +30,18 @@ export const studentAccessCodes = pgTable("student_access_codes", {
   instanceId: uuid("instance_id")
     .notNull()
     .references(() => feedbackInstances.id, { onDelete: "cascade" }),
-  code: varchar("code", { length: 8 }).notNull().unique(),
+  code: varchar("code", { length: 8 }).notNull(),
   used: boolean("used").default(false).notNull(),
   usedAt: timestamp("used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   instanceIdIdx: index("student_access_codes_instance_id_idx").on(table.instanceId),
+  
+  // Ensure each code is unique within the same feedback instance
+  instanceCodeUnique: uniqueIndex("student_access_codes_instance_code_unique").on(
+    table.instanceId,
+    table.code
+  ),
 }));
 
 export const courses = pgTable("courses", {

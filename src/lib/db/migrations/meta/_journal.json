@@ -15,6 +15,13 @@
       "when": 1777646002819,
       "tag": "0001_tearful_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777647009181,
+      "tag": "0002_whole_albert_cleary",
+      "breakpoints": true
     }
   ]
 }
