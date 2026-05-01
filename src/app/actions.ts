@@ -148,3 +148,67 @@ export async function getCoursesByInstanceId(
     return { success: false, error: "Failed to fetch courses" };
   }
 }
+
+export async function updateInstanceTitle(
+  instanceId: string,
+  newTitle: string,
+): Promise<{ success: true; instance: FeedbackInstance } | { success: false; error: string }> {
+  const trimmedTitle = newTitle.trim();
+
+  if (!isValidUuid(instanceId)) {
+    return { success: false, error: "Valid feedback instance ID is required" };
+  }
+
+  if (!trimmedTitle) {
+    return { success: false, error: "Title is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId);
+  if (!ownership.success) {
+    return ownership;
+  }
+
+  try {
+    const [updatedInstance] = await db
+      .update(feedbackInstances)
+      .set({ title: trimmedTitle, updatedAt: new Date() })
+      .where(eq(feedbackInstances.id, instanceId))
+      .returning();
+
+    return { success: true, instance: updatedInstance };
+  } catch (error) {
+    console.error("Failed to update instance title:", error);
+    return { success: false, error: "Failed to update instance title" };
+  }
+}
+
+export async function deleteCourse(
+  courseId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  if (!isValidUuid(courseId)) {
+    return { success: false, error: "Valid course ID is required" };
+  }
+
+  try {
+    // First, fetch the course to get its instanceId
+    const [course] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
+
+    if (!course) {
+      return { success: false, error: "Course not found" };
+    }
+
+    // Validate ownership of the instance that owns this course
+    const ownership = await validateInstanceOwnership(course.instanceId);
+    if (!ownership.success) {
+      return ownership;
+    }
+
+    // Delete the course
+    await db.delete(courses).where(eq(courses.id, courseId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete course:", error);
+    return { success: false, error: "Failed to delete course" };
+  }
+}
