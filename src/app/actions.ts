@@ -237,3 +237,46 @@ export async function getAccessCodesByInstanceId(
     return { success: false, error: "Failed to fetch access codes" };
   }
 }
+
+// Student-safe actions (no admin ownership validation)
+
+export async function getFeedbackInstanceForStudent(
+  joinCode: string,
+): Promise<{ success: true; instance: FeedbackInstance } | { success: false; error: string }> {
+  if (!joinCode?.trim()) {
+    return { success: false, error: "Join code is required" };
+  }
+
+  try {
+    const [instance] = await db
+      .select()
+      .from(feedbackInstances)
+      .where(eq(feedbackInstances.joinCode, joinCode.trim()))
+      .limit(1);
+
+    if (!instance) {
+      return { success: false, error: "Feedback instance not found" };
+    }
+
+    return { success: true, instance };
+  } catch (error) {
+    console.error("Failed to query feedback instance for student:", error);
+    return { success: false, error: "Failed to fetch feedback instance" };
+  }
+}
+
+export async function getCoursesByInstanceIdForStudent(
+  instanceId: string,
+): Promise<{ success: true; courses: Course[] } | { success: false; error: string }> {
+  if (!isValidUuid(instanceId)) {
+    return { success: false, error: "Valid feedback instance ID is required" };
+  }
+
+  try {
+    const coursesResult = await db.select().from(courses).where(eq(courses.instanceId, instanceId));
+    return { success: true, courses: coursesResult };
+  } catch (error) {
+    console.error("Failed to fetch courses for student:", error);
+    return { success: false, error: "Failed to fetch courses" };
+  }
+}
