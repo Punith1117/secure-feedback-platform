@@ -1,5 +1,9 @@
-import { boolean, index, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, pgEnum, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+// Enums for type safety
+export const ratingEnum = pgEnum("rating", ["good", "average", "bad"]);
+export const questionTypeEnum = pgEnum("question_type", ["lecture_quality", "course_content"]);
 
 export const admin = pgTable("admin", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -46,6 +50,34 @@ export const courses = pgTable("courses", {
   instanceIdIdx: index("courses_instance_id_idx").on(table.instanceId),
 }));
 
+// Feedback submissions - one per student attempt
+export const feedbackSubmissions = pgTable("feedback_submissions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  instanceId: uuid("instance_id")
+    .notNull()
+    .references(() => feedbackInstances.id, { onDelete: "cascade" }),
+  accessCodeId: uuid("access_code_id")
+    .notNull()
+    .references(() => studentAccessCodes.id, { onDelete: "cascade" }),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+}, (table) => ({
+  accessCodeUnique: uniqueIndex("feedback_submissions_access_code_unique").on(table.accessCodeId),
+  instanceIdIdx: index("feedback_submissions_instance_id_idx").on(table.instanceId),
+}));
+
+// Feedback responses - stores actual ratings
+export const feedbackResponses = pgTable("feedback_responses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  submissionId: uuid("submission_id")
+    .notNull()
+    .references(() => feedbackSubmissions.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  questionType: questionTypeEnum("question_type").notNull(),
+  rating: ratingEnum("rating").notNull(),
+});
+
 export const adminRelations = relations(admin, ({ many }) => ({
   feedbackInstances: many(feedbackInstances),
 }));
@@ -65,6 +97,32 @@ export const courseRelations = relations(courses, ({ one }) => ({
   }),
 }));
 
+// Submission relations
+export const feedbackSubmissionRelations = relations(feedbackSubmissions, ({ one, many }) => ({
+  instance: one(feedbackInstances, {
+    fields: [feedbackSubmissions.instanceId],
+    references: [feedbackInstances.id],
+  }),
+  accessCode: one(studentAccessCodes, {
+    fields: [feedbackSubmissions.accessCodeId],
+    references: [studentAccessCodes.id],
+  }),
+  responses: many(feedbackResponses),
+}));
+
+// Response relations
+export const feedbackResponseRelations = relations(feedbackResponses, ({ one }) => ({
+  submission: one(feedbackSubmissions, {
+    fields: [feedbackResponses.submissionId],
+    references: [feedbackSubmissions.id],
+  }),
+  course: one(courses, {
+    fields: [feedbackResponses.courseId],
+    references: [courses.id],
+  }),
+}));
+
+// Types
 export type Admin = typeof admin.$inferSelect;
 export type NewAdmin = typeof admin.$inferInsert;
 
@@ -76,3 +134,9 @@ export type NewStudentAccessCode = typeof studentAccessCodes.$inferInsert;
 
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
+
+export type FeedbackSubmission = typeof feedbackSubmissions.$inferSelect;
+export type NewFeedbackSubmission = typeof feedbackSubmissions.$inferInsert;
+
+export type FeedbackResponse = typeof feedbackResponses.$inferSelect;
+export type NewFeedbackResponse = typeof feedbackResponses.$inferInsert;
