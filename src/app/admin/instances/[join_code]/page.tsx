@@ -1,6 +1,7 @@
-import { getAccessCodesByInstanceId, getCoursesByInstanceId, getInstanceByJoinCode } from "@/app/actions";
+import { getAccessCodesByInstanceId, getCoursesByInstanceId, getFeedbackResponsesByInstanceId, getInstanceByJoinCode } from "@/app/actions";
 import AdminInstanceAccessCodes from "@/components/admin-instance-access-codes";
 import AdminInstanceCourses from "@/components/admin-instance-courses";
+import AdminInstanceFeedback from "@/components/admin-instance-feedback";
 
 export default async function Page({ params }: { params: Promise<{ join_code: string }> }) {
   const { join_code: joinCode } = await params;
@@ -24,19 +25,29 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
   const accessCodesResult = await getAccessCodesByInstanceId(instance.id);
   const accessCodes = accessCodesResult.success ? accessCodesResult.accessCodes : [];
 
+  const feedbackResult = await getFeedbackResponsesByInstanceId(instance.id);
+  const feedbackData = feedbackResult.success ? feedbackResult.feedback : [];
+
   return (
     <div className="min-h-screen bg-slate-50 p-4">
-      <div className="mx-auto flex max-w-5xl flex gap-6 py-8">
-        <AdminInstanceCourses
-          instanceId={instanceResult.instance.id}
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 py-8">
+        <AdminInstanceFeedback
           instanceTitle={instanceResult.instance.title}
           joinCode={instanceResult.instance.joinCode}
-          initialCourses={courses}
+          feedback={feedbackData}
         />
-        <AdminInstanceAccessCodes
-          instanceId={instanceResult.instance.id}
-          initialAccessCodes={accessCodes}
-        />
+        <div className="flex gap-6">
+          <AdminInstanceCourses
+            instanceId={instanceResult.instance.id}
+            instanceTitle={instanceResult.instance.title}
+            joinCode={instanceResult.instance.joinCode}
+            initialCourses={courses}
+          />
+          <AdminInstanceAccessCodes
+            instanceId={instanceResult.instance.id}
+            initialAccessCodes={accessCodes}
+          />
+        </div>
       </div>
     </div>
   );

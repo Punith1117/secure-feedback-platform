@@ -297,6 +297,160 @@ export async function getCoursesByInstanceIdForStudent(
 }
 
 // Student feedback submission - transactional
+
+interface CourseFeedbackStats {
+  courseId: string;
+  courseTitle: string;
+  totalResponses: number;
+  lectureQualityRatings: {
+    good: number;
+    average: number;
+    bad: number;
+  };
+  courseContentRatings: {
+    good: number;
+    average: number;
+    bad: number;
+  };
+}
+
+interface CourseFeedbackWithPercentages extends CourseFeedbackStats {
+  lectureQualityPercentages: {
+    good: number;
+    average: number;
+    bad: number;
+  };
+  courseContentPercentages: {
+    good: number;
+    average: number;
+    bad: number;
+  };
+}
+
+// Get comprehensive feedback responses for an instance
+export async function getFeedbackResponsesByInstanceId(
+  instanceId: string,
+): Promise<{ success: true; feedback: CourseFeedbackWithPercentages[] } | { success: false; error: string }> {
+  if (!isValidUuid(instanceId)) {
+    return { success: false, error: "Valid feedback instance ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId);
+  if (!ownership.success) {
+    return ownership;
+  }
+
+  try {
+    // Get all courses for this instance
+    const coursesData = await db.select().from(courses).where(eq(courses.instanceId, instanceId));
+
+    if (coursesData.length === 0) {
+      return { success: true, feedback: [] };
+    }
+
+    // Get all submissions for this instance
+    const submissionsData = await db
+      .select()
+      .from(feedbackSubmissions)
+      .where(eq(feedbackSubmissions.instanceId, instanceId));
+
+    const submissionIds = new Set(submissionsData.map((s) => s.id));
+
+    if (submissionIds.size === 0) {
+      // No submissions yet, return courses with zero counts
+      const emptyFeedback: CourseFeedbackWithPercentages[] = coursesData.map((course) => ({
+        courseId: course.id,
+        courseTitle: course.title,
+        totalResponses: 0,
+        lectureQualityRatings: { good: 0, average: 0, bad: 0 },
+        courseContentRatings: { good: 0, average: 0, bad: 0 },
+        lectureQualityPercentages: { good: 0, average: 0, bad: 0 },
+        courseContentPercentages: { good: 0, average: 0, bad: 0 },
+      }));
+      return { success: true, feedback: emptyFeedback };
+    }
+
+    // Get all responses for these submissions
+    const responsesData = await db
+      .select()
+      .from(feedbackResponses)
+      .where(eq(feedbackResponses.submissionId, Array.from(submissionIds)[0]));
+
+    // Since we can't easily filter by multiple submission IDs in drizzle, we'll get all responses
+    // and filter in memory (this is a simplified approach)
+    const allResponsesQuery = await db.select().from(feedbackResponses);
+    const relevantResponses = allResponsesQuery.filter((r) => submissionIds.has(r.submissionId));
+
+    // Build a map of courseId -> responses
+    const responsesByCourse: Map<string, { lectureQuality: Rating[]; courseContent: Rating[] }> = new Map();
+
+    for (const course of coursesData) {
+      responsesByCourse.set(course.id, { lectureQuality: [], courseContent: [] });
+    }
+
+    for (const response of relevantResponses) {
+      const courseResponses = responsesByCourse.get(response.courseId);
+      if (courseResponses) {
+        if (response.questionType === "lecture_quality") {
+          courseResponses.lectureQuality.push(response.rating as Rating);
+        } else if (response.questionType === "course_content") {
+          courseResponses.courseContent.push(response.rating as Rating);
+        }
+      }
+    }
+
+    // Calculate stats for each course
+    const feedback: CourseFeedbackWithPercentages[] = coursesData.map((course) => {
+      const courseResponses = responsesByCourse.get(course.id) || {
+        lectureQuality: [],
+        courseContent: [],
+      };
+
+      const lectureQualityCounts = {
+        good: courseResponses.lectureQuality.filter((r) => r === "good").length,
+        average: courseResponses.lectureQuality.filter((r) => r === "average").length,
+        bad: courseResponses.lectureQuality.filter((r) => r === "bad").length,
+      };
+
+      const courseContentCounts = {
+        good: courseResponses.courseContent.filter((r) => r === "good").length,
+        average: courseResponses.courseContent.filter((r) => r === "average").length,
+        bad: courseResponses.courseContent.filter((r) => r === "bad").length,
+      };
+
+      const totalResponses = Math.max(
+        lectureQualityCounts.good + lectureQualityCounts.average + lectureQualityCounts.bad,
+        courseContentCounts.good + courseContentCounts.average + courseContentCounts.bad
+      );
+
+      const calculatePercentages = (counts: typeof lectureQualityCounts) => {
+        const total = counts.good + counts.average + counts.bad;
+        if (total === 0) return { good: 0, average: 0, bad: 0 };
+        return {
+          good: Math.round((counts.good / total) * 100),
+          average: Math.round((counts.average / total) * 100),
+          bad: Math.round((counts.bad / total) * 100),
+        };
+      };
+
+      return {
+        courseId: course.id,
+        courseTitle: course.title,
+        totalResponses,
+        lectureQualityRatings: lectureQualityCounts,
+        courseContentRatings: courseContentCounts,
+        lectureQualityPercentages: calculatePercentages(lectureQualityCounts),
+        courseContentPercentages: calculatePercentages(courseContentCounts),
+      };
+    });
+
+    return { success: true, feedback };
+  } catch (error) {
+    console.error("Failed to fetch feedback responses for instance:", error);
+    return { success: false, error: "Failed to fetch feedback responses" };
+  }
+}
+
 export async function submitFeedback(
   joinCode: string,
   accessCode: string,
