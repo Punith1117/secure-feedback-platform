@@ -42,7 +42,7 @@ export default function CreateInstanceForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-md">
       <div>
-        <label htmlFor="title" className="block text-sm font-medium mb-1">
+        <label htmlFor="title" className="block text-sm font-medium mb-1 text-gray-700">
           Instance Title
         </label>
         <input
@@ -51,13 +51,13 @@ export default function CreateInstanceForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter instance title"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={isSubmitting}
         />
       </div>
 
       <div>
-        <label htmlFor="numberOfStudents" className="block text-sm font-medium mb-1">
+        <label htmlFor="numberOfStudents" className="block text-sm font-medium mb-1 text-gray-700">
           Number of Students
         </label>
         <input
@@ -67,7 +67,7 @@ export default function CreateInstanceForm() {
           value={numberOfStudents}
           onChange={(e) => setNumberOfStudents(parseInt(e.target.value) || 1)}
           placeholder="Enter number of students"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={isSubmitting}
         />
       </div>
