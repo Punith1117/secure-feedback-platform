@@ -226,3 +226,8 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+// Type for feedback instances with additional stats
+export type FeedbackInstanceWithStats = FeedbackInstance & {
+  accessCodesCount: number;
+};

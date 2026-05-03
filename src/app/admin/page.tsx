@@ -1,5 +1,7 @@
 import { SignOutButton } from "@/components/auth/signout-button";
 import CreateInstanceForm from "@/components/create-instance-form";
+import AdminInstancesGrid from "@/components/admin-instances-grid";
+import { getUserFeedbackInstances } from "@/app/actions";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -15,9 +17,14 @@ export default async function AdminPage() {
 
   const user = session.user;
 
+  // Get user's feedback instances
+  const instancesResult = await getUserFeedbackInstances(user.id);
+  const instances = instancesResult.success ? instancesResult.instances : [];
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* User Info Section */}
           <div className="lg:col-span-1">
@@ -88,6 +95,9 @@ export default async function AdminPage() {
             </div>
           </div>
         </div>
+
+        {/* Instances Grid Section */}
+        <AdminInstancesGrid instances={instances} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, count } from "drizzle-orm";
 import {
   courses,
   feedbackInstances,
@@ -10,7 +10,7 @@ import {
   feedbackSubmissions,
   studentAccessCodes,
 } from "@/lib/db/schema";
-import type { Course, FeedbackInstance, StudentAccessCode } from "@/lib/db/schema";
+import type { Course, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats } from "@/lib/db/schema";
 
 type Rating = "good" | "average" | "bad";
 type QuestionType = "lecture_quality" | "course_content";
@@ -279,6 +279,40 @@ export async function getAccessCodesByInstanceId(
   } catch (error) {
     console.error("Failed to fetch access codes for instance:", error);
     return { success: false, error: "Failed to fetch access codes" };
+  }
+}
+
+// Get all feedback instances for the current user
+export async function getUserFeedbackInstances(
+  userId: string,
+): Promise<{ success: true; instances: FeedbackInstanceWithStats[] } | { success: false; error: string }> {
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  try {
+    // Get all instances for the user with access code counts
+    const instancesWithStats = await db
+      .select({
+        id: feedbackInstances.id,
+        userId: feedbackInstances.userId,
+        joinCode: feedbackInstances.joinCode,
+        title: feedbackInstances.title,
+        isActive: feedbackInstances.isActive,
+        createdAt: feedbackInstances.createdAt,
+        updatedAt: feedbackInstances.updatedAt,
+        accessCodesCount: count(studentAccessCodes.id),
+      })
+      .from(feedbackInstances)
+      .leftJoin(studentAccessCodes, eq(feedbackInstances.id, studentAccessCodes.instanceId))
+      .where(eq(feedbackInstances.userId, userId))
+      .groupBy(feedbackInstances.id)
+      .orderBy(feedbackInstances.createdAt);
+
+    return { success: true, instances: instancesWithStats };
+  } catch (error) {
+    console.error("Failed to get user feedback instances:", error);
+    return { success: false, error: "Failed to fetch feedback instances" };
   }
 }
 
