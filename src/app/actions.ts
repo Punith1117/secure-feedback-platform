@@ -21,7 +21,6 @@ interface FeedbackResponseInput {
   courseContentRating: Rating;
 }
 
-const ADMIN_ID = "1ca9a886-5192-47e6-9a10-0f356dac14dc";
 
 const isValidUuid = (value: unknown): value is string =>
   typeof value === "string" &&
@@ -41,8 +40,8 @@ export async function getInstanceByJoinCode(
       .where(eq(feedbackInstances.joinCode, joinCode.trim()))
       .limit(1);
 
-    if (!instance || instance.adminId !== ADMIN_ID) {
-      return { success: false, error: "Feedback instance not found or not owned by admin" };
+    if (!instance || !instance.userId) {
+      return { success: false, error: "Feedback instance not found or invalid" };
     }
 
     return { success: true, instance };
@@ -54,6 +53,7 @@ export async function getInstanceByJoinCode(
 
 async function validateInstanceOwnership(
   instanceId: string,
+  userId: string,
 ): Promise<{ success: true; instance: FeedbackInstance } | { success: false; error: string }> {
   try {
     const [instance] = await db
@@ -62,8 +62,8 @@ async function validateInstanceOwnership(
       .where(eq(feedbackInstances.id, instanceId))
       .limit(1);
 
-    if (!instance || instance.adminId !== ADMIN_ID) {
-      return { success: false, error: "Feedback instance not found or not owned by admin" };
+    if (!instance || instance.userId !== userId) {
+      return { success: false, error: "Feedback instance not found or access denied" };
     }
 
     return { success: true, instance };
@@ -73,7 +73,7 @@ async function validateInstanceOwnership(
   }
 }
 
-export async function createFeedbackInstance(title: string, numberOfStudents: number) {
+export async function createFeedbackInstance(title: string, numberOfStudents: number, userId: string) {
   const trimmedTitle = title.trim();
 
   if (!trimmedTitle) {
@@ -84,11 +84,15 @@ export async function createFeedbackInstance(title: string, numberOfStudents: nu
     return { success: false, error: "Number of students must be at least 1" };
   }
 
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
   const joinCode = nanoid(8);
 
   try {
     const [instance] = await db.insert(feedbackInstances).values({
-      adminId: ADMIN_ID,
+      userId: userId.trim(),
       title: trimmedTitle,
       joinCode,
       // isActive, createdAt, updatedAt rely on database defaults
@@ -113,6 +117,7 @@ export async function createFeedbackInstance(title: string, numberOfStudents: nu
 export async function createCourse(
   instanceId: string,
   title: string,
+  userId: string,
 ): Promise<{ success: true; course: Course } | { success: false; error: string }> {
   const trimmedTitle = title.trim();
 
@@ -124,7 +129,11 @@ export async function createCourse(
     return { success: false, error: "Course title is required" };
   }
 
-  const ownership = await validateInstanceOwnership(instanceId);
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
   if (!ownership.success) {
     return ownership;
   }
@@ -145,12 +154,17 @@ export async function createCourse(
 
 export async function getCoursesByInstanceId(
   instanceId: string,
+  userId: string,
 ): Promise<{ success: true; courses: Course[] } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
-  const ownership = await validateInstanceOwnership(instanceId);
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
   if (!ownership.success) {
     return ownership;
   }
@@ -167,6 +181,7 @@ export async function getCoursesByInstanceId(
 export async function updateInstanceTitle(
   instanceId: string,
   newTitle: string,
+  userId: string,
 ): Promise<{ success: true; instance: FeedbackInstance } | { success: false; error: string }> {
   const trimmedTitle = newTitle.trim();
 
@@ -178,7 +193,11 @@ export async function updateInstanceTitle(
     return { success: false, error: "Title is required" };
   }
 
-  const ownership = await validateInstanceOwnership(instanceId);
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
   if (!ownership.success) {
     return ownership;
   }
@@ -199,9 +218,14 @@ export async function updateInstanceTitle(
 
 export async function deleteCourse(
   courseId: string,
+  userId: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
   if (!isValidUuid(courseId)) {
     return { success: false, error: "Valid course ID is required" };
+  }
+
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
   }
 
   try {
@@ -213,7 +237,7 @@ export async function deleteCourse(
     }
 
     // Validate ownership of the instance that owns this course
-    const ownership = await validateInstanceOwnership(course.instanceId);
+    const ownership = await validateInstanceOwnership(course.instanceId, userId);
     if (!ownership.success) {
       return ownership;
     }
@@ -230,12 +254,17 @@ export async function deleteCourse(
 
 export async function getAccessCodesByInstanceId(
   instanceId: string,
+  userId: string,
 ): Promise<{ success: true; accessCodes: StudentAccessCode[] } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
-  const ownership = await validateInstanceOwnership(instanceId);
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
   if (!ownership.success) {
     return ownership;
   }
@@ -330,12 +359,17 @@ interface CourseFeedbackWithPercentages extends CourseFeedbackStats {
 // Get comprehensive feedback responses for an instance
 export async function getFeedbackResponsesByInstanceId(
   instanceId: string,
+  userId: string,
 ): Promise<{ success: true; feedback: CourseFeedbackWithPercentages[] } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
-  const ownership = await validateInstanceOwnership(instanceId);
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
   if (!ownership.success) {
     return ownership;
   }

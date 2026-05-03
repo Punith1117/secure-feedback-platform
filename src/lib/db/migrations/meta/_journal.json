@@ -36,6 +36,13 @@
       "when": 1777821654586,
       "tag": "0004_thin_klaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777830018461,
+      "tag": "0005_flawless_whiplash",
+      "breakpoints": true
     }
   ]
 }

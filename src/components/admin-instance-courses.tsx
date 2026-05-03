@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createCourse, deleteCourse, updateInstanceTitle } from "@/app/actions";
+import { useSession } from "@/lib/auth-client";
 import type { Course } from "@/lib/db/schema";
 
 type AdminInstanceCoursesProps = {
@@ -24,6 +25,7 @@ export default function AdminInstanceCourses({
   const [editedTitle, setEditedTitle] = useState(instanceTitle);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: session } = useSession();
 
   async function handleUpdateTitle() {
     const trimmedTitle = editedTitle.trim();
@@ -32,8 +34,13 @@ export default function AdminInstanceCourses({
       return;
     }
 
+    if (!session?.user?.id) {
+      setMessage({ type: "error", text: "You must be logged in to update the title." });
+      return;
+    }
+
     setIsSubmitting(true);
-    const result = await updateInstanceTitle(instanceId, trimmedTitle);
+    const result = await updateInstanceTitle(instanceId, trimmedTitle, session.user.id);
 
     if (result.success) {
       setInstanceTitleLocal(result.instance.title);
@@ -57,8 +64,13 @@ export default function AdminInstanceCourses({
       return;
     }
 
+    if (!session?.user?.id) {
+      setMessage({ type: "error", text: "You must be logged in to delete a course." });
+      return;
+    }
+
     setIsSubmitting(true);
-    const result = await deleteCourse(courseId);
+    const result = await deleteCourse(courseId, session.user.id);
 
     if (result.success) {
       setCourses((current) => current.filter((c) => c.id !== courseId));
@@ -80,9 +92,14 @@ export default function AdminInstanceCourses({
       return;
     }
 
+    if (!session?.user?.id) {
+      setMessage({ type: "error", text: "You must be logged in to add a course." });
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const result = await createCourse(instanceId, trimmedTitle);
+    const result = await createCourse(instanceId, trimmedTitle, session.user.id);
 
     if (result.success) {
       setCourses((current) => [...current, result.course]);

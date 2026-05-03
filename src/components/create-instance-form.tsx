@@ -2,19 +2,27 @@
 
 import { useState } from "react";
 import { createFeedbackInstance } from "@/app/actions";
+import { useSession } from "@/lib/auth-client";
 
 export default function CreateInstanceForm() {
   const [title, setTitle] = useState("");
   const [numberOfStudents, setNumberOfStudents] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string; joinCode?: string } | null>(null);
+  const { data: session } = useSession();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage(null);
 
-    const result = await createFeedbackInstance(title, numberOfStudents);
+    if (!session?.user?.id) {
+      setMessage({ type: "error", text: "You must be logged in to create an instance" });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const result = await createFeedbackInstance(title, numberOfStudents, session.user.id);
 
     if (result.success) {
       setTitle("");

@@ -5,24 +5,31 @@ import { relations } from "drizzle-orm";
 export const ratingEnum = pgEnum("rating", ["good", "average", "bad"]);
 export const questionTypeEnum = pgEnum("question_type", ["lecture_quality", "course_content"]);
 
-export const admin = pgTable("admin", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  password: varchar("password", { length: 255 }).notNull(),
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  username: text("username").unique(),
+  displayUsername: text("display_username"),
 });
 
 export const feedbackInstances = pgTable("feedback_instances", {
   id: uuid("id").defaultRandom().primaryKey(),
-  adminId: uuid("admin_id").notNull().references(() => admin.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   joinCode: varchar("join_code", { length: 8 }).notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  adminIdIdx: index("feedback_instances_admin_id_idx").on(table.adminId),
+  userIdIdx: index("feedback_instances_user_id_idx").on(table.userId),
 }));
 
 export const studentAccessCodes = pgTable("student_access_codes", {
@@ -84,14 +91,10 @@ export const feedbackResponses = pgTable("feedback_responses", {
   rating: ratingEnum("rating").notNull(),
 });
 
-export const adminRelations = relations(admin, ({ many }) => ({
-  feedbackInstances: many(feedbackInstances),
-}));
-
 export const feedbackInstanceRelations = relations(feedbackInstances, ({ one, many }) => ({
-  admin: one(admin, {
-    fields: [feedbackInstances.adminId],
-    references: [admin.id],
+  user: one(user, {
+    fields: [feedbackInstances.userId],
+    references: [user.id],
   }),
   courses: many(courses),
 }));
@@ -128,10 +131,6 @@ export const feedbackResponseRelations = relations(feedbackResponses, ({ one }) 
   }),
 }));
 
-// Types
-export type Admin = typeof admin.$inferSelect;
-export type NewAdmin = typeof admin.$inferInsert;
-
 export type FeedbackInstance = typeof feedbackInstances.$inferSelect;
 export type NewFeedbackInstance = typeof feedbackInstances.$inferInsert;
 
@@ -148,21 +147,6 @@ export type FeedbackResponse = typeof feedbackResponses.$inferSelect;
 export type NewFeedbackResponse = typeof feedbackResponses.$inferInsert;
 
 
-// auth tables
-export const user = pgTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  username: text("username").unique(),
-  displayUsername: text("display_username"),
-});
 
 export const session = pgTable(
   "session",
@@ -226,6 +210,7 @@ export const verification = pgTable(
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  feedbackInstances: many(feedbackInstances),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
