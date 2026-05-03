@@ -2,7 +2,7 @@
 
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import {
   courses,
   feedbackInstances,
@@ -370,16 +370,11 @@ export async function getFeedbackResponsesByInstanceId(
       return { success: true, feedback: emptyFeedback };
     }
 
-    // Get all responses for these submissions
-    const responsesData = await db
+    // Get all responses for these submissions using efficient database filtering
+    const relevantResponses = await db
       .select()
       .from(feedbackResponses)
-      .where(eq(feedbackResponses.submissionId, Array.from(submissionIds)[0]));
-
-    // Since we can't easily filter by multiple submission IDs in drizzle, we'll get all responses
-    // and filter in memory (this is a simplified approach)
-    const allResponsesQuery = await db.select().from(feedbackResponses);
-    const relevantResponses = allResponsesQuery.filter((r) => submissionIds.has(r.submissionId));
+      .where(inArray(feedbackResponses.submissionId, Array.from(submissionIds)));
 
     // Build a map of courseId -> responses
     const responsesByCourse: Map<string, { lectureQuality: Rating[]; courseContent: Rating[] }> = new Map();
