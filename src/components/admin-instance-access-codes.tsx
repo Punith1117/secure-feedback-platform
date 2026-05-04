@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import type { StudentAccessCode } from "@/lib/db/schema";
+import jsPDF from "jspdf";
 
 type AdminInstanceAccessCodesProps = {
   instanceId: string;
   initialAccessCodes: StudentAccessCode[];
+  adminUsername?: string;
+  joinCode?: string;
+  instanceTitle?: string;
 };
 
 function formatDate(date: Date | null | undefined): string {
@@ -36,9 +40,13 @@ function copyToClipboard(text: string, onSuccess: () => void) {
 export default function AdminInstanceAccessCodes({
   instanceId,
   initialAccessCodes,
+  adminUsername = "Admin",
+  joinCode = "N/A",
+  instanceTitle = "Feedback Instance",
 }: AdminInstanceAccessCodesProps) {
   const [accessCodes] = useState<StudentAccessCode[]>(initialAccessCodes);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
   const [filter, setFilter] = useState<"all" | "available" | "used">("all");
 
   const filteredCodes = accessCodes.filter((code) => {
@@ -57,7 +65,102 @@ export default function AdminInstanceAccessCodes({
     });
   }
 
+  const handleCopyAllAvailable = async () => {
+    if (accessCodes.length == 0) return;
+    const availableCodes = accessCodes.filter(c => !c.used).map(c => c.code).join('\n');
+    await navigator.clipboard.writeText(availableCodes);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2000);
+  };
+
+  const handlePrintPDF = async () => {
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      // Add header page with instance info
+      pdf.setFontSize(20);
+      pdf.text(instanceTitle, 105, 30, { align: 'center' });
+      
+      pdf.setFontSize(14);
+      pdf.text(`Admin: ${adminUsername}`, 105, 50, { align: 'center' });
+      pdf.text(`Join Code: ${joinCode}`, 105, 65, { align: 'center' });
+      pdf.text(`Generated: ${new Date().toLocaleDateString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`, 105, 80, { align: 'center' });
+
+      pdf.setFontSize(16);
+      pdf.text('Available Access Codes', 105, 100, { align: 'center' });
+
+      // Get available codes
+      const availableCodes = accessCodes.filter(c => !c.used);
+      
+      if (availableCodes.length === 0) {
+        pdf.setFontSize(12);
+        pdf.text('No available access codes', 105, 140, { align: 'center' });
+      } else {
+        // Simple pagination: 2 columns, 14 rows per page = 28 codes per page
+        const codesPerPage = 24;
+        const totalPages = Math.ceil(availableCodes.length / codesPerPage);
+        
+        for (let page = 0; page < totalPages; page++) {
+          if (page > 0) {
+            pdf.addPage();
+            // Add page header
+            pdf.setFontSize(14);
+            pdf.text(`${instanceTitle} - Page ${page + 1}`, 105, 20, { align: 'center' });
+            pdf.setFontSize(12);
+            pdf.text('Available Access Codes (continued)', 105, 30, { align: 'center' });
+          }
+          
+          const startIndex = page * codesPerPage;
+          const endIndex = Math.min(startIndex + codesPerPage, availableCodes.length);
+          const pageCodes = availableCodes.slice(startIndex, endIndex);
+          
+          // Draw codes in 2-column grid
+          const startY = page === 0 ? 120 : 50;
+          const columnWidth = 95;
+          const leftMargin = 10;
+          const rightMargin = 105;
+          const rowHeight = 15;
+          
+          pageCodes.forEach((code, index) => {
+            const column = index % 2;
+            const row = Math.floor(index / 2);
+            const x = column === 0 ? leftMargin : rightMargin;
+            const y = startY + (row * rowHeight);
+            
+            // Draw code box
+            pdf.setDrawColor(200);
+            pdf.rect(x - 2, y - 8, columnWidth, 12);
+            
+            // Add code number and value
+            pdf.setFontSize(10);
+            pdf.text(`#${startIndex + index + 1}`, x, y - 2);
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(code.code, x + 15, y - 2);
+            pdf.setFont('helvetica', 'normal');
+          });
+        }
+      }
+      
+      pdf.save(`access-codes-${joinCode}-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
+  };
+
   return (
+    <>
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -65,12 +168,12 @@ export default function AdminInstanceAccessCodes({
           <p className="text-sm text-slate-600">Student access codes for this feedback instance.</p>
         </div>
         <div className="flex gap-2">
-          <span className="rounded-xl bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
-            {availableCount} available
-          </span>
-          <span className="rounded-xl bg-slate-100 px-3 py-1 text-sm text-slate-700">
-            {usedCount} used
-          </span>
+          <button onClick={handleCopyAllAvailable} className="text-blue-700 hover:bg-gray-100 rounded-xl px-3 py-1.5 cursor-pointer">
+            {copiedAll ? 'Available copied' : 'Copy available'}
+          </button>
+          <button onClick={handlePrintPDF} className="text-green-700 hover:bg-green-100 rounded-xl px-3 py-1.5 cursor-pointer">
+            Print Available
+          </button>
         </div>
       </div>
 
@@ -95,7 +198,7 @@ export default function AdminInstanceAccessCodes({
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >
-          Available
+          {availableCount} Available
         </button>
         <button
           type="button"
@@ -106,7 +209,7 @@ export default function AdminInstanceAccessCodes({
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
         >
-          Used
+          {usedCount} Used
         </button>
       </div>
 
@@ -150,5 +253,6 @@ export default function AdminInstanceAccessCodes({
         </div>
       )}
     </section>
+    </>
   );
 }

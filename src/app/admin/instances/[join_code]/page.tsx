@@ -77,6 +77,9 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
           <AdminInstanceAccessCodes
             instanceId={instanceResult.instance.id}
             initialAccessCodes={accessCodes}
+            adminUsername={session.user.displayUsername || session.user.username || session.user.name || "Admin"}
+            joinCode={instanceResult.instance.joinCode}
+            instanceTitle={instanceResult.instance.title}
           />
         </div>
       </div>
