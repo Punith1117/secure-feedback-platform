@@ -1,4 +1,5 @@
 import { AdminHeader } from "@/components/admin-header"
+import { AdminNavigation } from "@/components/admin-navigation"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
@@ -20,6 +21,7 @@ export default async function AdminLayout({
 
   return (
     <div className="relative">
+      <AdminNavigation />
       <AdminHeader user={user} />
       <div className="pt-16">
         {children}
