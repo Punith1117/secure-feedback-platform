@@ -252,6 +252,33 @@ export async function deleteCourse(
   }
 }
 
+export async function deleteFeedbackInstance(
+  instanceId: string,
+  userId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  if (!isValidUuid(instanceId)) {
+    return { success: false, error: "Valid instance ID is required" };
+  }
+
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
+  if (!ownership.success) {
+    return ownership;
+  }
+
+  try {
+    // Delete the instance (cascade will handle related records)
+    await db.delete(feedbackInstances).where(eq(feedbackInstances.id, instanceId));
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete feedback instance:", error);
+    return { success: false, error: "Failed to delete feedback instance" };
+  }
+}
+
 export async function getAccessCodesByInstanceId(
   instanceId: string,
   userId: string,
