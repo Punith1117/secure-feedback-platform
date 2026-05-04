@@ -4,7 +4,11 @@ import { useState } from "react";
 import { createFeedbackInstance } from "@/app/actions";
 import { useSession } from "@/lib/auth-client";
 
-export default function CreateInstanceForm() {
+interface CreateInstanceFormProps {
+  onClose?: () => void;
+}
+
+export default function CreateInstanceForm({ onClose }: CreateInstanceFormProps) {
   const [title, setTitle] = useState("");
   const [numberOfStudents, setNumberOfStudents] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +36,11 @@ export default function CreateInstanceForm() {
         text: "Feedback instance created successfully!",
         joinCode: result.joinCode,
       });
+      // Close modal after a short delay to show success message
+      setTimeout(() => {
+        onClose?.();
+        setMessage(null); // Reset message for next time modal opens
+      }, 1500);
     } else {
       setMessage({ type: "error", text: result.error || "Failed to create instance" });
     }

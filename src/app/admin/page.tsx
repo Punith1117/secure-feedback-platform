@@ -1,5 +1,5 @@
-import CreateInstanceForm from "@/components/create-instance-form";
 import AdminInstancesGrid from "@/components/admin-instances-grid";
+import AdminModalWrapper from "@/components/admin-modal-wrapper";
 import { getUserFeedbackInstances } from "@/app/actions";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -28,24 +28,12 @@ export default async function AdminPage() {
           <p className="mt-2 text-gray-600">Manage your feedback instances</p>
         </div>
 
-        {/* Create Instance Form Section */}
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Create New Feedback Instance
-            </h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Set up a new feedback collection instance for your courses.
-            </p>
-          </div>
-          <div className="px-4 py-5 sm:px-6">
-            <CreateInstanceForm />
-          </div>
-        </div>
-
         {/* Instances Grid Section */}
         <AdminInstancesGrid instances={instances} />
       </div>
+
+      {/* Modal and Floating Button Wrapper */}
+      <AdminModalWrapper />
     </div>
   );
 }

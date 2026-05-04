@@ -23,7 +23,7 @@ export default async function AdminLayout({
     <div className="relative">
       <AdminNavigation />
       <AdminHeader user={user} />
-      <div className="pt-16">
+      <div>
         {children}
       </div>
     </div>
