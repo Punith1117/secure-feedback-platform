@@ -11,6 +11,7 @@ import {
   studentAccessCodes,
 } from "@/lib/db/schema";
 import type { Course, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats } from "@/lib/db/schema";
+import { Realtime } from "ably";
 
 type Rating = "good" | "average" | "bad";
 type QuestionType = "lecture_quality" | "course_content";
@@ -693,6 +694,21 @@ export async function submitFeedback(
 
       await tx.insert(feedbackResponses).values(responseRecords);
     });
+
+    // Publish to Ably after successful submission
+    try {
+      const ably = new Realtime(process.env.ABLY_API_KEY || "");
+      const channel = ably.channels.get(`feedback:${joinCode}`);
+      await channel.publish("feedback-response", {
+        joinCode,
+        responses,
+        timestamp: new Date().toISOString(),
+      });
+      ably.close();
+    } catch (ablyError) {
+      console.error("Failed to publish to Ably:", ablyError);
+      // Don't fail the submission if Ably publishing fails
+    }
 
     return { success: true };
   } catch (error) {

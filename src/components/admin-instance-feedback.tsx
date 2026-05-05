@@ -1,6 +1,7 @@
 "use client";
 
-import type { Course, FeedbackInstance } from "@/lib/db/schema";
+import { useEffect, useState } from "react";
+import { Realtime } from "ably";
 
 type Rating = "good" | "average" | "bad";
 
@@ -36,6 +37,18 @@ interface AdminInstanceFeedbackProps {
   feedback: CourseFeedbackWithPercentages[];
 }
 
+interface AblyResponse {
+  courseId: string;
+  lectureQualityRating: Rating;
+  courseContentRating: Rating;
+}
+
+interface AblyMessage {
+  joinCode: string;
+  responses: AblyResponse[];
+  timestamp: string;
+}
+
 function RatingBar({
   label,
   percentage,
@@ -68,11 +81,71 @@ function RatingBar({
 export default function AdminInstanceFeedback({
   instanceTitle,
   joinCode,
-  feedback,
+  feedback: initialFeedback,
 }: AdminInstanceFeedbackProps) {
+  const [feedback, setFeedback] = useState(initialFeedback);
+
+  useEffect(() => {
+    const ably = new Realtime(process.env.NEXT_PUBLIC_ABLY_API_KEY || "");
+    const channel = ably.channels.get(`feedback:${joinCode}`);
+
+    channel.subscribe((message: unknown) => {
+      const data = (message as { data: AblyMessage }).data;
+      console.log("New feedback response received:", data);
+
+      setFeedback((prev) =>
+        prev.map((course) => {
+          const responsesForCourse = data.responses.filter(
+            (r) => r.courseId === course.courseId
+          );
+
+          if (responsesForCourse.length === 0) return course;
+
+          let lectureQuality = { ...course.lectureQualityRatings };
+          let courseContent = { ...course.courseContentRatings };
+
+          for (const r of responsesForCourse) {
+            lectureQuality[r.lectureQualityRating]++;
+            courseContent[r.courseContentRating]++;
+          }
+
+          const totalResponses =
+            lectureQuality.good +
+            lectureQuality.average +
+            lectureQuality.bad;
+
+          const calc = (c: typeof lectureQuality) => {
+            const total = c.good + c.average + c.bad;
+            return total === 0
+              ? { good: 0, average: 0, bad: 0 }
+              : {
+                  good: Math.round((c.good / total) * 100),
+                  average: Math.round((c.average / total) * 100),
+                  bad: Math.round((c.bad / total) * 100),
+                };
+          };
+
+          return {
+            ...course,
+            totalResponses,
+            lectureQualityRatings: lectureQuality,
+            courseContentRatings: courseContent,
+            lectureQualityPercentages: calc(lectureQuality),
+            courseContentPercentages: calc(courseContent),
+          };
+        })
+      );
+    });
+
+    return () => {
+      channel.unsubscribe();
+      ably.close();
+    };
+  }, [joinCode]);
+
   // Calculate total submissions across all courses
   const totalSubmissions = feedback.reduce(
-    (sum, f) => Math.max(sum, f.totalResponses),
+    (sum: number, f: CourseFeedbackWithPercentages) => Math.max(sum, f.totalResponses),
     0
   );
 
