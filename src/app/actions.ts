@@ -698,12 +698,24 @@ export async function submitFeedback(
     // Publish to Ably after successful submission
     try {
       const ably = new Realtime(process.env.ABLY_API_KEY || "");
-      const channel = ably.channels.get(`feedback:${joinCode}`);
-      await channel.publish("feedback-response", {
+      
+      // Publish feedback response
+      const feedbackChannel = ably.channels.get(`feedback:${joinCode}`);
+      await feedbackChannel.publish("feedback-response", {
         joinCode,
         responses,
         timestamp: new Date().toISOString(),
       });
+      
+      // Publish access code usage update
+      const accessCodeChannel = ably.channels.get(`access-codes:${joinCode}`);
+      await accessCodeChannel.publish("access-code-used", {
+        accessCodeId: accessCodeRecord.id,
+        code: accessCodeRecord.code,
+        instanceId: instance.id,
+        timestamp: new Date().toISOString(),
+      });
+      
       ably.close();
     } catch (ablyError) {
       console.error("Failed to publish to Ably:", ablyError);

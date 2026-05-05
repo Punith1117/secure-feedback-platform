@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { StudentAccessCode } from "@/lib/db/schema";
 import jsPDF from "jspdf";
+import { Realtime } from "ably";
 
 type AdminInstanceAccessCodesProps = {
   instanceId: string;
@@ -44,10 +45,35 @@ export default function AdminInstanceAccessCodes({
   joinCode = "N/A",
   instanceTitle = "Feedback Instance",
 }: AdminInstanceAccessCodesProps) {
-  const [accessCodes] = useState<StudentAccessCode[]>(initialAccessCodes);
+  const [accessCodes, setAccessCodes] = useState<StudentAccessCode[]>(initialAccessCodes);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [filter, setFilter] = useState<"all" | "available" | "used">("all");
+
+  // Subscribe to Ably for real-time access code updates
+  useEffect(() => {
+    if (!joinCode || joinCode === "N/A") return;
+
+    const ably = new Realtime(process.env.NEXT_PUBLIC_ABLY_API_KEY || "");
+    const channel = ably.channels.get(`access-codes:${joinCode}`);
+
+    channel.subscribe((message: unknown) => {
+      const data = (message as { data: { accessCodeId: string; code: string; instanceId: string; timestamp: string } }).data;
+
+      setAccessCodes((prev) =>
+        prev.map((code) =>
+          code.id === data.accessCodeId
+            ? { ...code, used: true, usedAt: new Date(data.timestamp) }
+            : code
+        )
+      );
+    });
+
+    return () => {
+      channel.unsubscribe();
+      ably.close();
+    };
+  }, [joinCode]);
 
   const filteredCodes = accessCodes.filter((code) => {
     if (filter === "available") return !code.used;
