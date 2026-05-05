@@ -13,6 +13,8 @@ import {
 import type { Course, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats } from "@/lib/db/schema";
 import { Realtime } from "ably";
 
+const MAX_ACCESS_CODES_PER_INSTANCE = 100;
+
 type Rating = "good" | "average" | "bad";
 type QuestionType = "lecture_quality" | "course_content";
 
@@ -83,6 +85,10 @@ export async function createFeedbackInstance(title: string, numberOfStudents: nu
 
   if (!numberOfStudents || numberOfStudents < 1) {
     return { success: false, error: "Number of students must be at least 1" };
+  }
+
+  if (numberOfStudents > MAX_ACCESS_CODES_PER_INSTANCE) {
+    return { success: false, error: `Cannot generate more than ${MAX_ACCESS_CODES_PER_INSTANCE} access codes at once` };
   }
 
   if (!userId?.trim()) {

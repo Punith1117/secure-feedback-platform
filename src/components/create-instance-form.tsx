@@ -26,6 +26,12 @@ export default function CreateInstanceForm({ onClose }: CreateInstanceFormProps)
       return;
     }
 
+    if (numberOfStudents > 100) {
+      setMessage({ type: "error", text: "Up to 100 students per instance due to technical limitations" });
+      setIsSubmitting(false);
+      return;
+    }
+
     const result = await createFeedbackInstance(title, numberOfStudents, session.user.id);
 
     if (result.success) {
@@ -73,6 +79,7 @@ export default function CreateInstanceForm({ onClose }: CreateInstanceFormProps)
           id="numberOfStudents"
           type="number"
           min="1"
+          max="100"
           value={numberOfStudents}
           onChange={(e) => setNumberOfStudents(parseInt(e.target.value) || 1)}
           placeholder="Enter number of students"
