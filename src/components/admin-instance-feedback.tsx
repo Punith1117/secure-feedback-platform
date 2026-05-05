@@ -91,8 +91,7 @@ export default function AdminInstanceFeedback({
 
     channel.subscribe((message: unknown) => {
       const data = (message as { data: AblyMessage }).data;
-      console.log("New feedback response received:", data);
-
+      
       setFeedback((prev) =>
         prev.map((course) => {
           const responsesForCourse = data.responses.filter(
