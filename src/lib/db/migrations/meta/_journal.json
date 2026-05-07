@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1777623137228,
-      "tag": "0000_noisy_beyonder",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1777646002819,
-      "tag": "0001_tearful_siren",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1777647009181,
-      "tag": "0002_whole_albert_cleary",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1777821167259,
-      "tag": "0003_tiny_iron_monger",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1777821654586,
-      "tag": "0004_thin_klaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1777830018461,
-      "tag": "0005_flawless_whiplash",
+      "when": 1778160461896,
+      "tag": "0000_cynical_stick",
       "breakpoints": true
     }
   ]

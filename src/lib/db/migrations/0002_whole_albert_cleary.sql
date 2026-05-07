@@ -1,2 +1,0 @@
-ALTER TABLE "student_access_codes" DROP CONSTRAINT "student_access_codes_code_unique";--> statement-breakpoint
-CREATE UNIQUE INDEX "student_access_codes_instance_code_unique" ON "student_access_codes" USING btree ("instance_id","code");
