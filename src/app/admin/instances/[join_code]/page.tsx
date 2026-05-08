@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import AdminInstanceAccessCodes from "@/components/admin-instance-access-codes";
 import AdminInstanceCourses from "@/components/admin-instance-courses";
 import AdminInstanceFeedback from "@/components/admin-instance-feedback";
+import AdminInstanceQRCode from "@/components/admin-instance-qr-code";
 
 export default async function Page({ params }: { params: Promise<{ join_code: string }> }) {
   const { join_code: joinCode } = await params;
@@ -67,6 +68,12 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
           joinCode={instanceResult.instance.joinCode}
           feedback={feedbackData}
         />
+        
+        <AdminInstanceQRCode
+          joinCode={instanceResult.instance.joinCode}
+          instanceTitle={instanceResult.instance.title}
+        />
+        
         <div className="flex gap-6">
           <AdminInstanceCourses
             instanceId={instanceResult.instance.id}
