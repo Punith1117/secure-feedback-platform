@@ -70,14 +70,56 @@ export const studentAccessCodes = pgTable("student_access_codes", {
 
 export const courses = pgTable("courses", {
   id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 255 }).notNull(),
   instanceId: uuid("instance_id")
     .notNull()
     .references(() => feedbackInstances.id, { onDelete: "cascade" }),
+  courseOfferingId: uuid("course_offering_id")
+    .notNull()
+    .references(() => courseOfferings.id, { onDelete: "restrict" }),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 }, (table) => ({
   instanceIdIdx: index("courses_instance_id_idx").on(table.instanceId),
+  courseOfferingIdIdx: index("courses_course_offering_id_idx")
+    .on(table.courseOfferingId),
+
+  // Prevent same course being added twice in same instance
+  instanceCourseUnique: uniqueIndex("courses_instance_course_unique")
+    .on(table.instanceId, table.courseOfferingId),
+}));
+
+export const courseOfferings = pgTable("course_offerings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+
+  title: varchar("title", { length: 255 }).notNull(),
+
+  templateId: uuid("template_id")
+    .notNull()
+    .references(() => templates.id, { onDelete: "restrict" }),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+}, (table) => ({
+  userIdIdx: index("course_offerings_user_id_idx").on(table.userId),
+
+  templateIdIdx: index("course_offerings_template_id_idx").on(table.templateId),
+
+  // Prevent duplicate course names per user
+  userTitleUnique: uniqueIndex("course_offerings_user_title_unique")
+    .on(table.userId, table.title),
 }));
 
 // Feedback submissions - one per student attempt
@@ -127,6 +169,24 @@ export const courseRelations = relations(courses, ({ one }) => ({
     fields: [courses.instanceId],
     references: [feedbackInstances.id],
   }),
+  courseOffering: one(courseOfferings, {
+    fields: [courses.courseOfferingId],
+    references: [courseOfferings.id],
+  }),
+}));
+
+export const courseOfferingRelations = relations(courseOfferings, ({ one, many }) => ({
+  user: one(user, {
+    fields: [courseOfferings.userId],
+    references: [user.id],
+  }),
+
+  template: one(templates, {
+    fields: [courseOfferings.templateId],
+    references: [templates.id],
+  }),
+
+  courses: many(courses),
 }));
 
 // Submission relations
