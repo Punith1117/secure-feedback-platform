@@ -230,6 +230,9 @@ export type NewCourse = typeof courses.$inferInsert;
 export type FeedbackSubmission = typeof feedbackSubmissions.$inferSelect;
 export type NewFeedbackSubmission = typeof feedbackSubmissions.$inferInsert;
 
+export type CourseOffering = typeof courseOfferings.$inferSelect;
+export type NewCourseOffering = typeof courseOfferings.$inferInsert;
+
 export type FeedbackResponse = typeof feedbackResponses.$inferSelect;
 export type NewFeedbackResponse = typeof feedbackResponses.$inferInsert;
 

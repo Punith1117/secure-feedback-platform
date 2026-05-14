@@ -1,6 +1,7 @@
 import AdminInstancesGrid from "@/components/admin-instances-grid";
 import AdminModalWrapper from "@/components/admin-modal-wrapper";
-import { getUserFeedbackInstances } from "@/app/actions";
+import CourseOfferingForm from "@/components/course-offering-form";
+import { getUserFeedbackInstances, getTemplates } from "@/app/actions";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -19,6 +20,10 @@ export default async function AdminPage() {
   const instancesResult = await getUserFeedbackInstances(user.id);
   const instances = instancesResult.success ? instancesResult.instances : [];
 
+  // Get templates
+  const templatesResult = await getTemplates();
+  const templates = templatesResult.success ? templatesResult.templates : [];
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -30,6 +35,11 @@ export default async function AdminPage() {
 
         {/* Instances Grid Section */}
         <AdminInstancesGrid instances={instances} />
+
+        {/* Course Offering Form */}
+        <div className="max-w-2xl mx-auto">
+          <CourseOfferingForm userId={user.id} templates={templates} />
+        </div>
       </div>
 
       {/* Modal and Floating Button Wrapper */}

@@ -5,12 +5,14 @@ import { db } from "@/lib/db";
 import { eq, and, inArray, count } from "drizzle-orm";
 import {
   courses,
+  courseOfferings,
   feedbackInstances,
   feedbackResponses,
   feedbackSubmissions,
   studentAccessCodes,
+  templates,
 } from "@/lib/db/schema";
-import type { Course, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats } from "@/lib/db/schema";
+import type { Course, CourseOffering, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats, Template } from "@/lib/db/schema";
 import { Realtime } from "ably";
 
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
@@ -156,6 +158,49 @@ export async function createCourse(
   } catch (error) {
     console.error("Failed to create course:", error);
     return { success: false, error: "Failed to create course" };
+  }
+}
+
+export async function createCourseOffering(
+  title: string,
+  templateId: string,
+  userId: string,
+): Promise<{ success: true; courseOffering: CourseOffering } | { success: false; error: string }> {
+  const trimmedTitle = title.trim();
+
+  if (!trimmedTitle) {
+    return { success: false, error: "Course offering title is required" };
+  }
+
+  if (!isValidUuid(templateId)) {
+    return { success: false, error: "Valid template ID is required" };
+  }
+
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  try {
+    const [courseOffering] = await db.insert(courseOfferings).values({
+      userId,
+      title: trimmedTitle,
+      templateId,
+    }).returning();
+
+    return { success: true, courseOffering };
+  } catch (error) {
+    console.error("Failed to create course offering:", error);
+    return { success: false, error: "Failed to create course offering. You might already have an offering with this title." };
+  }
+}
+
+export async function getTemplates(): Promise<{ success: true; templates: Template[] } | { success: false; error: string }> {
+  try {
+    const templatesResult = await db.select().from(templates);
+    return { success: true, templates: templatesResult };
+  } catch (error) {
+    console.error("Failed to fetch templates:", error);
+    return { success: false, error: "Failed to fetch templates" };
   }
 }
 
