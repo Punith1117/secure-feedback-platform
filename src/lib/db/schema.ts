@@ -117,9 +117,13 @@ export const courseOfferings = pgTable("course_offerings", {
 
   templateIdIdx: index("course_offerings_template_id_idx").on(table.templateId),
 
-  // Prevent duplicate course names per user
-  userTitleUnique: uniqueIndex("course_offerings_user_title_unique")
-    .on(table.userId, table.title),
+  // Same title allowed if template differs
+  // Example:
+  // DBMS + Theory
+  // DBMS + Lab
+  userTitleTemplateUnique: uniqueIndex(
+    "course_offerings_user_title_template_unique"
+  ).on(table.userId, table.title, table.templateId),
 }));
 
 // Feedback submissions - one per student attempt

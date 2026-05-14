@@ -1,0 +1,2 @@
+DROP INDEX "course_offerings_user_title_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "course_offerings_user_title_template_unique" ON "course_offerings" USING btree ("user_id","title","template_id");

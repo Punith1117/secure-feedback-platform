@@ -36,6 +36,13 @@
       "when": 1778781570521,
       "tag": "0004_gigantic_ultimatum",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778784791137,
+      "tag": "0005_secret_talisman",
+      "breakpoints": true
     }
   ]
 }
