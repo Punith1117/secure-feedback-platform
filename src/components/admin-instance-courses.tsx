@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { createCourse, deleteCourse, updateInstanceTitle } from "@/app/actions";
 import { useSession } from "@/lib/auth-client";
-import type { Course } from "@/lib/db/schema";
+import type { Course, CourseOffering } from "@/lib/db/schema";
 
 type AdminInstanceCoursesProps = {
   instanceId: string;
   joinCode: string;
   instanceTitle: string;
-  initialCourses: Course[];
+  initialCourses: (Course & { title: string; templateName: string })[];
+  courseOfferings: (CourseOffering & { templateName: string })[];
 };
 
 export default function AdminInstanceCourses({
@@ -17,9 +18,10 @@ export default function AdminInstanceCourses({
   joinCode,
   instanceTitle,
   initialCourses,
+  courseOfferings,
 }: AdminInstanceCoursesProps) {
-  const [courses, setCourses] = useState<Course[]>(initialCourses);
-  const [title, setTitle] = useState("");
+  const [courses, setCourses] = useState<(Course & { title: string; templateName: string })[]>(initialCourses);
+  const [selectedCourseOfferingId, setSelectedCourseOfferingId] = useState("");
   const [instanceTitleLocal, setInstanceTitleLocal] = useState(instanceTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(instanceTitle);
@@ -86,9 +88,8 @@ export default function AdminInstanceCourses({
     event.preventDefault();
     setMessage(null);
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setMessage({ type: "error", text: "Course title is required." });
+    if (!selectedCourseOfferingId) {
+      setMessage({ type: "error", text: "Please select a course offering." });
       return;
     }
 
@@ -99,11 +100,11 @@ export default function AdminInstanceCourses({
 
     setIsSubmitting(true);
 
-    const result = await createCourse(instanceId, trimmedTitle, session.user.id);
+    const result = await createCourse(instanceId, selectedCourseOfferingId, session.user.id);
 
     if (result.success) {
       setCourses((current) => [...current, result.course]);
-      setTitle("");
+      setSelectedCourseOfferingId("");
       setMessage({ type: "success", text: "Course added successfully." });
     } else {
       setMessage({ type: "error", text: result.error || "Failed to add course." });
@@ -167,18 +168,24 @@ return (
         <div className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="courseTitle" className="block text-sm font-medium text-slate-700">
-                Course Title
+              <label htmlFor="courseOffering" className="block text-sm font-medium text-slate-700">
+                Course Offering
               </label>
-              <input
-                id="courseTitle"
-                name="courseTitle"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                className="mt-2 block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="Enter course title"
+              <select
+                id="courseOffering"
+                name="courseOffering"
+                value={selectedCourseOfferingId}
+                onChange={(event) => setSelectedCourseOfferingId(event.target.value)}
+                className="mt-2 block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
                 disabled={isSubmitting}
-              />
+              >
+                <option value="" disabled>Select a course offering</option>
+                {courseOfferings.map((offering) => (
+                  <option key={offering.id} value={offering.id}>
+                    {offering.title} ({offering.templateName})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {message && (
@@ -218,7 +225,12 @@ return (
             {courses.map((course) => (
               <li key={course.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-slate-900">{course.title}</p>
+                  <div className="flex flex-col">
+                    <p className="font-medium text-slate-900">{course.title}</p>
+                    <span className="mt-1 w-fit rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      {course.templateName}
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleDeleteCourse(course.id)}

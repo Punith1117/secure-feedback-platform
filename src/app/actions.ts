@@ -125,17 +125,15 @@ export async function createFeedbackInstance(title: string, numberOfStudents: nu
 
 export async function createCourse(
   instanceId: string,
-  title: string,
+  courseOfferingId: string,
   userId: string,
-): Promise<{ success: true; course: Course } | { success: false; error: string }> {
-  const trimmedTitle = title.trim();
-
+): Promise<{ success: true; course: Course & { title: string; templateName: string } } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
-  if (!trimmedTitle) {
-    return { success: false, error: "Course title is required" };
+  if (!isValidUuid(courseOfferingId)) {
+    return { success: false, error: "Valid course offering ID is required" };
   }
 
   if (!userId?.trim()) {
@@ -150,11 +148,21 @@ export async function createCourse(
   try {
     const [course] = await db.insert(courses).values({
       instanceId,
-      title: trimmedTitle,
+      courseOfferingId,
       // createdAt, updatedAt rely on database defaults
     }).returning();
 
-    return { success: true, course };
+    // Fetch the title and templateName to return a complete object
+    const [offering] = await db.select({ 
+        title: courseOfferings.title,
+        templateName: templates.name
+      })
+      .from(courseOfferings)
+      .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
+      .where(eq(courseOfferings.id, courseOfferingId))
+      .limit(1);
+
+    return { success: true, course: { ...course, title: offering?.title || "Unknown", templateName: offering?.templateName || "Unknown" } };
   } catch (error) {
     console.error("Failed to create course:", error);
     return { success: false, error: "Failed to create course" };
@@ -237,7 +245,7 @@ export async function getCourseOfferings(
 export async function getCoursesByInstanceId(
   instanceId: string,
   userId: string,
-): Promise<{ success: true; courses: Course[] } | { success: false; error: string }> {
+): Promise<{ success: true; courses: (Course & { title: string; templateName: string })[] } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
@@ -252,7 +260,21 @@ export async function getCoursesByInstanceId(
   }
 
   try {
-    const coursesResult = await db.select().from(courses).where(eq(courses.instanceId, instanceId));
+    const coursesResult = await db
+      .select({
+        id: courses.id,
+        instanceId: courses.instanceId,
+        courseOfferingId: courses.courseOfferingId,
+        createdAt: courses.createdAt,
+        updatedAt: courses.updatedAt,
+        title: courseOfferings.title,
+        templateName: templates.name,
+      })
+      .from(courses)
+      .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
+      .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
+      .where(eq(courses.instanceId, instanceId));
+      
     return { success: true, courses: coursesResult };
   } catch (error) {
     console.error("Failed to fetch courses for instance:", error);
@@ -454,13 +476,26 @@ export async function getFeedbackInstanceForStudent(
 
 export async function getCoursesByInstanceIdForStudent(
   instanceId: string,
-): Promise<{ success: true; courses: Course[] } | { success: false; error: string }> {
+): Promise<{ success: true; courses: (Course & { title: string; templateName: string })[] } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
   try {
-    const coursesResult = await db.select().from(courses).where(eq(courses.instanceId, instanceId));
+    const coursesResult = await db
+      .select({
+        id: courses.id,
+        instanceId: courses.instanceId,
+        courseOfferingId: courses.courseOfferingId,
+        createdAt: courses.createdAt,
+        updatedAt: courses.updatedAt,
+        title: courseOfferings.title,
+        templateName: templates.name,
+      })
+      .from(courses)
+      .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
+      .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
+      .where(eq(courses.instanceId, instanceId));
     return { success: true, courses: coursesResult };
   } catch (error) {
     console.error("Failed to fetch courses for student:", error);
@@ -519,7 +554,18 @@ export async function getFeedbackResponsesByInstanceId(
 
   try {
     // Get all courses for this instance
-    const coursesData = await db.select().from(courses).where(eq(courses.instanceId, instanceId));
+    const coursesData = await db
+      .select({
+        id: courses.id,
+        instanceId: courses.instanceId,
+        courseOfferingId: courses.courseOfferingId,
+        createdAt: courses.createdAt,
+        updatedAt: courses.updatedAt,
+        title: courseOfferings.title,
+      })
+      .from(courses)
+      .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
+      .where(eq(courses.instanceId, instanceId));
 
     if (coursesData.length === 0) {
       return { success: true, feedback: [] };
