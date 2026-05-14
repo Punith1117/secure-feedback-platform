@@ -1,9 +1,30 @@
-import { boolean, index, text, pgTable, pgEnum, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, text, pgTable, pgEnum, timestamp, uniqueIndex, uuid, varchar, primaryKey } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Enums for type safety
 export const ratingEnum = pgEnum("rating", ["good", "average", "bad"]);
 export const questionTypeEnum = pgEnum("question_type", ["lecture_quality", "course_content"]);
+
+export const questionBank = pgTable("question_bank", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  questionBank: text("question_bank").notNull().unique(),
+});
+
+export const templates = pgTable("templates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
+export const templateQuestions = pgTable("template_questions", {
+  templateId: uuid("template_id")
+    .notNull()
+    .references(() => templates.id, { onDelete: "cascade" }),
+  questionId: uuid("question_id")
+    .notNull()
+    .references(() => questionBank.id, { onDelete: "cascade" }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.templateId, table.questionId] }),
+}));
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -146,6 +167,15 @@ export type NewFeedbackSubmission = typeof feedbackSubmissions.$inferInsert;
 export type FeedbackResponse = typeof feedbackResponses.$inferSelect;
 export type NewFeedbackResponse = typeof feedbackResponses.$inferInsert;
 
+export type QuestionBank = typeof questionBank.$inferSelect;
+export type NewQuestionBank = typeof questionBank.$inferInsert;
+
+export type Template = typeof templates.$inferSelect;
+export type NewTemplate = typeof templates.$inferInsert;
+
+export type TemplateQuestion = typeof templateQuestions.$inferSelect;
+export type NewTemplateQuestion = typeof templateQuestions.$inferInsert;
+
 
 
 export const session = pgTable(
@@ -224,6 +254,25 @@ export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
     references: [user.id],
+  }),
+}));
+
+export const questionBankRelations = relations(questionBank, ({ many }) => ({
+  templateQuestions: many(templateQuestions),
+}));
+
+export const templatesRelations = relations(templates, ({ many }) => ({
+  templateQuestions: many(templateQuestions),
+}));
+
+export const templateQuestionsRelations = relations(templateQuestions, ({ one }) => ({
+  template: one(templates, {
+    fields: [templateQuestions.templateId],
+    references: [templates.id],
+  }),
+  question: one(questionBank, {
+    fields: [templateQuestions.questionId],
+    references: [questionBank.id],
   }),
 }));
 

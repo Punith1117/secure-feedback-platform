@@ -8,6 +8,13 @@
       "when": 1778160461896,
       "tag": "0000_cynical_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778777667114,
+      "tag": "0001_wide_scarecrow",
+      "breakpoints": true
     }
   ]
 }
