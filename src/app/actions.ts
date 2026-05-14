@@ -204,6 +204,36 @@ export async function getTemplates(): Promise<{ success: true; templates: Templa
   }
 }
 
+export async function getCourseOfferings(
+  userId: string,
+): Promise<{ success: true; offerings: (CourseOffering & { templateName: string })[] } | { success: false; error: string }> {
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  try {
+    const offerings = await db
+      .select({
+        id: courseOfferings.id,
+        userId: courseOfferings.userId,
+        title: courseOfferings.title,
+        templateId: courseOfferings.templateId,
+        createdAt: courseOfferings.createdAt,
+        updatedAt: courseOfferings.updatedAt,
+        templateName: templates.name,
+      })
+      .from(courseOfferings)
+      .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
+      .where(eq(courseOfferings.userId, userId))
+      .orderBy(courseOfferings.createdAt);
+
+    return { success: true, offerings };
+  } catch (error) {
+    console.error("Failed to fetch course offerings:", error);
+    return { success: false, error: "Failed to fetch course offerings" };
+  }
+}
+
 export async function getCoursesByInstanceId(
   instanceId: string,
   userId: string,
