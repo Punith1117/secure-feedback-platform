@@ -15,6 +15,13 @@
       "when": 1778777667114,
       "tag": "0001_wide_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778779351489,
+      "tag": "0002_known_joshua_kane",
+      "breakpoints": true
     }
   ]
 }

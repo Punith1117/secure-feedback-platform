@@ -1,9 +1,5 @@
-import { boolean, index, text, pgTable, pgEnum, timestamp, uniqueIndex, uuid, varchar, primaryKey } from "drizzle-orm/pg-core";
+import { boolean, index, text, pgTable, pgEnum, timestamp, uniqueIndex, uuid, varchar, primaryKey, smallint } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-
-// Enums for type safety
-export const ratingEnum = pgEnum("rating", ["good", "average", "bad"]);
-export const questionTypeEnum = pgEnum("question_type", ["lecture_quality", "course_content"]);
 
 export const questionBank = pgTable("question_bank", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -108,9 +104,15 @@ export const feedbackResponses = pgTable("feedback_responses", {
   courseId: uuid("course_id")
     .notNull()
     .references(() => courses.id, { onDelete: "cascade" }),
-  questionType: questionTypeEnum("question_type").notNull(),
-  rating: ratingEnum("rating").notNull(),
-});
+  questionId: uuid("question_id")
+    .notNull()
+    .references(() => questionBank.id, { onDelete: "cascade" }),
+  rating: smallint("rating").notNull(),
+}, (table) => ({
+  submissionIdIdx: index("feedback_responses_submission_id_idx").on(table.submissionId),
+  courseIdIdx: index("feedback_responses_course_id_idx").on(table.courseId),
+  questionIdIdx: index("feedback_responses_question_id_idx").on(table.questionId),
+}));
 
 export const feedbackInstanceRelations = relations(feedbackInstances, ({ one, many }) => ({
   user: one(user, {
@@ -149,6 +151,10 @@ export const feedbackResponseRelations = relations(feedbackResponses, ({ one }) 
   course: one(courses, {
     fields: [feedbackResponses.courseId],
     references: [courses.id],
+  }),
+  question: one(questionBank, {
+    fields: [feedbackResponses.questionId],
+    references: [questionBank.id],
   }),
 }));
 
