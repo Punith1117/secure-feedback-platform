@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 
 export const questionBank = pgTable("question_bank", {
   id: uuid("id").defaultRandom().primaryKey(),
-  questionBank: text("question_bank").notNull().unique(),
+  question: text("question").notNull().unique(),
 });
 
 export const templates = pgTable("templates", {

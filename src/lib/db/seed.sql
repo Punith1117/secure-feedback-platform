@@ -16,14 +16,14 @@ WITH theory_template AS (
   RETURNING id
 ),
 theory_questions AS (
-  INSERT INTO question_bank (question_bank)
+  INSERT INTO question_bank (question)
   VALUES
     ('How clearly was the subject explained during lectures?'),
     ('How effective was the teaching pace for understanding concepts?'),
     ('How helpful were the lecture materials and notes?'),
     ('How interactive and engaging were the theory classes?'),
     ('How well did the course improve your understanding of the subject?')
-  RETURNING id, question_bank
+  RETURNING id, question
 )
 
 INSERT INTO template_questions (template_id, question_id)
@@ -42,14 +42,14 @@ WITH lab_template AS (
   RETURNING id
 ),
 lab_questions AS (
-  INSERT INTO question_bank (question_bank)
+  INSERT INTO question_bank (question)
   VALUES
     ('How useful were the lab sessions for practical understanding?'),
     ('How well were the lab experiments explained before execution?'),
     ('How adequate were the lab equipment and resources?'),
     ('How supportive was the lab instructor during practical sessions?'),
     ('How effectively did the lab sessions improve your hands-on skills?')
-  RETURNING id, question_bank
+  RETURNING id, question
 )
 
 INSERT INTO template_questions (template_id, question_id)
@@ -68,14 +68,14 @@ WITH workshop_template AS (
   RETURNING id
 ),
 workshop_questions AS (
-  INSERT INTO question_bank (question_bank)
+  INSERT INTO question_bank (question)
   VALUES
     ('How relevant was the workshop content to your learning needs?'),
     ('How engaging and interactive was the workshop session?'),
     ('How clearly were the workshop activities demonstrated?'),
     ('How useful were the practical exercises conducted in the workshop?'),
     ('How satisfied are you with the overall workshop experience?')
-  RETURNING id, question_bank
+  RETURNING id, question
 )
 
 INSERT INTO template_questions (template_id, question_id)
