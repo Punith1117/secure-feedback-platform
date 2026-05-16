@@ -166,8 +166,8 @@ export async function createCourse(
     })
       .from(courseOfferings)
       .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
-      .innerJoin(faculty, eq(courses.facultyId, faculty.id))
       .innerJoin(courses, eq(courseOfferings.id, courses.courseOfferingId))
+      .innerJoin(faculty, eq(courses.facultyId, faculty.id))
       .where(eq(courseOfferings.id, courseOfferingId))
       .limit(1);
 
