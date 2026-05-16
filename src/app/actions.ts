@@ -329,7 +329,7 @@ export async function createFaculty(
 export async function getCoursesByInstanceId(
   instanceId: string,
   userId: string,
-): Promise<{ success: true; courses: (Course & { title: string; templateName: string })[] } | { success: false; error: string }> {
+): Promise<{ success: true; courses: (Course & { title: string; templateName: string, facultyName: string })[] } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
@@ -353,10 +353,13 @@ export async function getCoursesByInstanceId(
         updatedAt: courses.updatedAt,
         title: courseOfferings.title,
         templateName: templates.name,
+        facultyId: courses.facultyId,
+        facultyName: faculty.name
       })
       .from(courses)
       .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
       .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
+      .innerJoin(faculty, eq(courses.facultyId, faculty.id))
       .where(eq(courses.instanceId, instanceId));
 
     return { success: true, courses: coursesResult };
