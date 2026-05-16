@@ -8,27 +8,22 @@ type Rating = "good" | "average" | "bad";
 interface CourseFeedbackWithPercentages {
   courseId: string;
   courseTitle: string;
+  facultyName: string;
   totalResponses: number;
-  lectureQualityRatings: {
-    good: number;
-    average: number;
-    bad: number;
-  };
-  courseContentRatings: {
-    good: number;
-    average: number;
-    bad: number;
-  };
-  lectureQualityPercentages: {
-    good: number;
-    average: number;
-    bad: number;
-  };
-  courseContentPercentages: {
-    good: number;
-    average: number;
-    bad: number;
-  };
+  questions: {
+    questionId: string;
+    text: string;
+    ratings: {
+      good: number;
+      average: number;
+      bad: number;
+    };
+    percentages: {
+      good: number;
+      average: number;
+      bad: number;
+    };
+  }[];
 }
 
 interface AdminInstanceFeedbackProps {
@@ -39,8 +34,8 @@ interface AdminInstanceFeedbackProps {
 
 interface AblyResponse {
   courseId: string;
-  lectureQualityRating: Rating;
-  courseContentRating: Rating;
+  questionId: string;
+  rating: number; // 3 = good, 2 = average, 1 = bad
 }
 
 interface AblyMessage {
@@ -100,37 +95,39 @@ export default function AdminInstanceFeedback({
 
           if (responsesForCourse.length === 0) return course;
 
-          let lectureQuality = { ...course.lectureQualityRatings };
-          let courseContent = { ...course.courseContentRatings };
+          let questions = [...course.questions];
 
           for (const r of responsesForCourse) {
-            lectureQuality[r.lectureQualityRating]++;
-            courseContent[r.courseContentRating]++;
+            const questionIndex = questions.findIndex(q => q.questionId === r.questionId);
+            if (questionIndex !== -1) {
+              const q = { ...questions[questionIndex] };
+              let ratings = { ...q.ratings };
+              
+              if (r.rating === 3) ratings.good++;
+              else if (r.rating === 2) ratings.average++;
+              else if (r.rating === 1) ratings.bad++;
+              
+              const total = ratings.good + ratings.average + ratings.bad;
+              
+              q.ratings = ratings;
+              q.percentages = total === 0 ? { good: 0, average: 0, bad: 0 } : {
+                good: Math.round((ratings.good / total) * 100),
+                average: Math.round((ratings.average / total) * 100),
+                bad: Math.round((ratings.bad / total) * 100),
+              };
+              
+              questions[questionIndex] = q;
+            }
           }
 
-          const totalResponses =
-            lectureQuality.good +
-            lectureQuality.average +
-            lectureQuality.bad;
-
-          const calc = (c: typeof lectureQuality) => {
-            const total = c.good + c.average + c.bad;
-            return total === 0
-              ? { good: 0, average: 0, bad: 0 }
-              : {
-                  good: Math.round((c.good / total) * 100),
-                  average: Math.round((c.average / total) * 100),
-                  bad: Math.round((c.bad / total) * 100),
-                };
-          };
+          // In this simple realtime approach, we just increment total responses by 1 
+          // (assuming a single Ably message corresponds to 1 full submission)
+          const totalResponses = course.totalResponses + 1;
 
           return {
             ...course,
             totalResponses,
-            lectureQualityRatings: lectureQuality,
-            courseContentRatings: courseContent,
-            lectureQualityPercentages: calc(lectureQuality),
-            courseContentPercentages: calc(courseContent),
+            questions,
           };
         })
       );
@@ -181,7 +178,7 @@ export default function AdminInstanceFeedback({
               >
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-slate-900">
-                    {courseFeedback.courseTitle}
+                    {courseFeedback.courseTitle} <span className="text-slate-500 font-normal">({courseFeedback.facultyName})</span>
                   </h3>
                   <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
                     {courseFeedback.totalResponses}{" "}
@@ -192,55 +189,31 @@ export default function AdminInstanceFeedback({
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  {/* Lecture Quality Ratings */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-slate-700">
-                      Lecture Quality
-                    </h4>
-                    <RatingBar
-                      label="Good"
-                      percentage={courseFeedback.lectureQualityPercentages.good}
-                      count={courseFeedback.lectureQualityRatings.good}
-                      color="bg-emerald-500"
-                    />
-                    <RatingBar
-                      label="Average"
-                      percentage={courseFeedback.lectureQualityPercentages.average}
-                      count={courseFeedback.lectureQualityRatings.average}
-                      color="bg-amber-500"
-                    />
-                    <RatingBar
-                      label="Bad"
-                      percentage={courseFeedback.lectureQualityPercentages.bad}
-                      count={courseFeedback.lectureQualityRatings.bad}
-                      color="bg-rose-500"
-                    />
-                  </div>
-
-                  {/* Course Content Ratings */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-slate-700">
-                      Course Content
-                    </h4>
-                    <RatingBar
-                      label="Good"
-                      percentage={courseFeedback.courseContentPercentages.good}
-                      count={courseFeedback.courseContentRatings.good}
-                      color="bg-emerald-500"
-                    />
-                    <RatingBar
-                      label="Average"
-                      percentage={courseFeedback.courseContentPercentages.average}
-                      count={courseFeedback.courseContentRatings.average}
-                      color="bg-amber-500"
-                    />
-                    <RatingBar
-                      label="Bad"
-                      percentage={courseFeedback.courseContentPercentages.bad}
-                      count={courseFeedback.courseContentRatings.bad}
-                      color="bg-rose-500"
-                    />
-                  </div>
+                  {courseFeedback.questions.map(question => (
+                    <div key={question.questionId} className="space-y-3">
+                      <h4 className="text-sm font-medium text-slate-700">
+                        {question.text}
+                      </h4>
+                      <RatingBar
+                        label="Good"
+                        percentage={question.percentages.good}
+                        count={question.ratings.good}
+                        color="bg-emerald-500"
+                      />
+                      <RatingBar
+                        label="Average"
+                        percentage={question.percentages.average}
+                        count={question.ratings.average}
+                        color="bg-amber-500"
+                      />
+                      <RatingBar
+                        label="Bad"
+                        percentage={question.percentages.bad}
+                        count={question.ratings.bad}
+                        color="bg-rose-500"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

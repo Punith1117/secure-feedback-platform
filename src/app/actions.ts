@@ -615,33 +615,25 @@ export async function getCoursesByInstanceIdForStudent(
 
 // Student feedback submission - transactional
 
-interface CourseFeedbackStats {
+export interface CourseFeedbackWithPercentages {
   courseId: string;
   courseTitle: string;
+  facultyName: string;
   totalResponses: number;
-  lectureQualityRatings: {
-    good: number;
-    average: number;
-    bad: number;
-  };
-  courseContentRatings: {
-    good: number;
-    average: number;
-    bad: number;
-  };
-}
-
-interface CourseFeedbackWithPercentages extends CourseFeedbackStats {
-  lectureQualityPercentages: {
-    good: number;
-    average: number;
-    bad: number;
-  };
-  courseContentPercentages: {
-    good: number;
-    average: number;
-    bad: number;
-  };
+  questions: {
+    questionId: string;
+    text: string;
+    ratings: {
+      good: number;
+      average: number;
+      bad: number;
+    };
+    percentages: {
+      good: number;
+      average: number;
+      bad: number;
+    };
+  }[];
 }
 
 // Get comprehensive feedback responses for an instance
@@ -663,112 +655,73 @@ export async function getFeedbackResponsesByInstanceId(
   }
 
   try {
-    // Get all courses for this instance
-    const coursesData = await db
-      .select({
-        id: courses.id,
-        instanceId: courses.instanceId,
-        courseOfferingId: courses.courseOfferingId,
-        createdAt: courses.createdAt,
-        updatedAt: courses.updatedAt,
-        title: courseOfferings.title,
-      })
-      .from(courses)
-      .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
-      .where(eq(courses.instanceId, instanceId));
+    const coursesData = await db.query.courses.findMany({
+      where: eq(courses.instanceId, instanceId),
+      with: {
+        faculty: true,
+        courseOffering: {
+          with: {
+            template: {
+              with: {
+                templateQuestions: {
+                  with: {
+                    question: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
 
     if (coursesData.length === 0) {
       return { success: true, feedback: [] };
     }
 
-    // Get all submissions for this instance
-    const submissionsData = await db
-      .select()
-      .from(feedbackSubmissions)
-      .where(eq(feedbackSubmissions.instanceId, instanceId));
+    const submissionsData = await db.query.feedbackSubmissions.findMany({
+      where: eq(feedbackSubmissions.instanceId, instanceId)
+    });
 
-    const submissionIds = new Set(submissionsData.map((s) => s.id));
+    const submissionIds = submissionsData.map((s) => s.id);
 
-    if (submissionIds.size === 0) {
-      // No submissions yet, return courses with zero counts
-      const emptyFeedback: CourseFeedbackWithPercentages[] = coursesData.map((course) => ({
-        courseId: course.id,
-        courseTitle: course.title,
-        totalResponses: 0,
-        lectureQualityRatings: { good: 0, average: 0, bad: 0 },
-        courseContentRatings: { good: 0, average: 0, bad: 0 },
-        lectureQualityPercentages: { good: 0, average: 0, bad: 0 },
-        courseContentPercentages: { good: 0, average: 0, bad: 0 },
-      }));
-      return { success: true, feedback: emptyFeedback };
+    let relevantResponses: typeof feedbackResponses.$inferSelect[] = [];
+    if (submissionIds.length > 0) {
+      relevantResponses = await db.query.feedbackResponses.findMany({
+        where: inArray(feedbackResponses.submissionId, submissionIds)
+      });
     }
 
-    // Get all responses for these submissions using efficient database filtering
-    const relevantResponses = await db
-      .select()
-      .from(feedbackResponses)
-      .where(inArray(feedbackResponses.submissionId, Array.from(submissionIds)));
-
-    // Build a map of courseId -> responses
-    const responsesByCourse: Map<string, { lectureQuality: Rating[]; courseContent: Rating[] }> = new Map();
-
-    for (const course of coursesData) {
-      responsesByCourse.set(course.id, { lectureQuality: [], courseContent: [] });
-    }
-
-    for (const response of relevantResponses) {
-      const courseResponses = responsesByCourse.get(response.courseId);
-      if (courseResponses) {
-        if (response.questionType === "lecture_quality") {
-          courseResponses.lectureQuality.push(response.rating as Rating);
-        } else if (response.questionType === "course_content") {
-          courseResponses.courseContent.push(response.rating as Rating);
-        }
-      }
-    }
-
-    // Calculate stats for each course
     const feedback: CourseFeedbackWithPercentages[] = coursesData.map((course) => {
-      const courseResponses = responsesByCourse.get(course.id) || {
-        lectureQuality: [],
-        courseContent: [],
-      };
+      const courseResponses = relevantResponses.filter(r => r.courseId === course.id);
+      const totalResponses = new Set(courseResponses.map(r => r.submissionId)).size;
 
-      const lectureQualityCounts = {
-        good: courseResponses.lectureQuality.filter((r) => r === "good").length,
-        average: courseResponses.lectureQuality.filter((r) => r === "average").length,
-        bad: courseResponses.lectureQuality.filter((r) => r === "bad").length,
-      };
+      const questions = course.courseOffering.template?.templateQuestions.map(tq => {
+        const qResponses = courseResponses.filter(r => r.questionId === tq.question.id);
+        
+        const good = qResponses.filter(r => r.rating === 3).length;
+        const average = qResponses.filter(r => r.rating === 2).length;
+        const bad = qResponses.filter(r => r.rating === 1).length;
+        const total = good + average + bad;
 
-      const courseContentCounts = {
-        good: courseResponses.courseContent.filter((r) => r === "good").length,
-        average: courseResponses.courseContent.filter((r) => r === "average").length,
-        bad: courseResponses.courseContent.filter((r) => r === "bad").length,
-      };
-
-      const totalResponses = Math.max(
-        lectureQualityCounts.good + lectureQualityCounts.average + lectureQualityCounts.bad,
-        courseContentCounts.good + courseContentCounts.average + courseContentCounts.bad
-      );
-
-      const calculatePercentages = (counts: typeof lectureQualityCounts) => {
-        const total = counts.good + counts.average + counts.bad;
-        if (total === 0) return { good: 0, average: 0, bad: 0 };
         return {
-          good: Math.round((counts.good / total) * 100),
-          average: Math.round((counts.average / total) * 100),
-          bad: Math.round((counts.bad / total) * 100),
+          questionId: tq.question.id,
+          text: tq.question.question,
+          ratings: { good, average, bad },
+          percentages: total === 0 ? { good: 0, average: 0, bad: 0 } : {
+            good: Math.round((good / total) * 100),
+            average: Math.round((average / total) * 100),
+            bad: Math.round((bad / total) * 100),
+          }
         };
-      };
+      }) || [];
 
       return {
         courseId: course.id,
-        courseTitle: course.title,
+        courseTitle: course.courseOffering.title,
+        facultyName: course.faculty?.name || "Unknown Faculty",
         totalResponses,
-        lectureQualityRatings: lectureQualityCounts,
-        courseContentRatings: courseContentCounts,
-        lectureQualityPercentages: calculatePercentages(lectureQualityCounts),
-        courseContentPercentages: calculatePercentages(courseContentCounts),
+        questions
       };
     });
 
