@@ -43,6 +43,13 @@
       "when": 1778784791137,
       "tag": "0005_secret_talisman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778920477447,
+      "tag": "0006_lively_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,29 @@ export const templateQuestions = pgTable("template_questions", {
   pk: primaryKey({ columns: [table.templateId, table.questionId] }),
 }));
 
+export const faculty = pgTable("faculty", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+
+  name: varchar("name", { length: 255 })
+    .notNull(),
+
+  createdAt: timestamp("created_at")
+    .defaultNow()
+    .notNull(),
+}, (table) => ({
+  userIdIdx: index("faculty_user_id_idx")
+    .on(table.userId),
+
+  // Faculty name unique PER admin
+  userFacultyUnique: uniqueIndex(
+    "faculty_user_name_unique"
+  ).on(table.userId, table.name),
+}));
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -76,6 +99,9 @@ export const courses = pgTable("courses", {
   courseOfferingId: uuid("course_offering_id")
     .notNull()
     .references(() => courseOfferings.id, { onDelete: "restrict" }),
+  facultyId: uuid("faculty_id")
+    .notNull()
+    .references(() => faculty.id, { onDelete: "restrict" }),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 
@@ -87,6 +113,8 @@ export const courses = pgTable("courses", {
   instanceIdIdx: index("courses_instance_id_idx").on(table.instanceId),
   courseOfferingIdIdx: index("courses_course_offering_id_idx")
     .on(table.courseOfferingId),
+  facultyIdIdx: index("courses_faculty_id_idx")
+    .on(table.facultyId),
 
   // Prevent same course being added twice in same instance
   instanceCourseUnique: uniqueIndex("courses_instance_course_unique")
@@ -176,6 +204,10 @@ export const courseRelations = relations(courses, ({ one }) => ({
   courseOffering: one(courseOfferings, {
     fields: [courses.courseOfferingId],
     references: [courseOfferings.id],
+  }),
+  faculty: one(faculty, {
+    fields: [courses.facultyId],
+    references: [faculty.id],
   }),
 }));
 
@@ -349,7 +381,19 @@ export const templateQuestionsRelations = relations(templateQuestions, ({ one })
   }),
 }));
 
+export const facultyRelations = relations(faculty, ({ one, many }) => ({
+  user: one(user, {
+    fields: [faculty.userId],
+    references: [user.id],
+  }),
+
+  courses: many(courses),
+}));
+
 // Type for feedback instances with additional stats
 export type FeedbackInstanceWithStats = FeedbackInstance & {
   accessCodesCount: number;
 };
+
+export type Faculty = typeof faculty.$inferSelect;
+export type NewFaculty = typeof faculty.$inferInsert;
