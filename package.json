@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "nanoid": "^5.1.9",
     "next": "16.2.4",
     "pg": "^8.20.0",
