@@ -61,23 +61,23 @@ export default function AdminInstancesGrid({ instances }: AdminInstancesGridProp
 
   if (instances.length === 0) {
     return (
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
+        <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900">
             Your Feedback Instances
           </h3>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
             Manage and view your feedback collection instances.
           </p>
         </div>
-        <div className="px-4 py-5 sm:px-6">
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📋</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="px-5 py-8 sm:px-6 sm:py-12">
+          <div className="text-center max-w-xs mx-auto">
+            <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 mx-auto">📋</div>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-1">
               No feedback instances yet
             </h3>
-            <p className="text-gray-600">
-              Create your first feedback instance using the form on the left.
+            <p className="text-xs sm:text-sm text-slate-500">
+              Create your first feedback instance using the form below.
             </p>
           </div>
         </div>
@@ -86,21 +86,21 @@ export default function AdminInstancesGrid({ instances }: AdminInstancesGridProp
   }
 
   return (
-    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-      <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">
+    <div className="bg-white shadow-sm border border-slate-200 rounded-3xl overflow-hidden">
+      <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100">
+        <h3 className="text-base sm:text-lg font-semibold text-slate-900">
           Your Feedback Instances
         </h3>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
           Manage and view your feedback collection instances.
         </p>
       </div>
-      <div className="px-4 py-5 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {instances.map((instance) => (
             <div
               key={instance.id}
-              className="relative p-6 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200"
+              className="relative p-5 sm:p-6 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all duration-200 bg-slate-50/50"
             >
               <Link
                 href={`/admin/instances/${instance.joinCode}`}
@@ -108,15 +108,15 @@ export default function AdminInstancesGrid({ instances }: AdminInstancesGridProp
               >
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 truncate">
+                    <h4 className="text-base sm:text-lg font-bold text-slate-900 truncate pr-8" title={instance.title}>
                       {instance.title}
                     </h4>
-                    <div className="flex items-center mt-1">
+                    <div className="flex items-center mt-1.5">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${
                           instance.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-200 text-slate-600"
                         }`}
                       >
                         {instance.isActive ? "Active" : "Inactive"}
@@ -124,22 +124,22 @@ export default function AdminInstancesGrid({ instances }: AdminInstancesGridProp
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-xs sm:text-sm">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500">Join Code:</span>
-                      <span className="font-mono font-semibold text-blue-600">
+                      <span className="text-slate-500">Join Code:</span>
+                      <span className="font-mono font-bold text-blue-600">
                         {instance.joinCode}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500">Access Codes:</span>
-                      <span className="font-medium text-gray-900">
+                      <span className="text-slate-500">Access Codes:</span>
+                      <span className="font-semibold text-slate-900">
                         {instance.accessCodesCount}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500">Created:</span>
-                      <span className="text-gray-700">
+                      <span className="text-slate-500">Created:</span>
+                      <span className="text-slate-700">
                         {formatDate(instance.createdAt)}
                       </span>
                     </div>

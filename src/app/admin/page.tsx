@@ -36,43 +36,46 @@ export default async function AdminPage() {
   const facultyList = facultyResult.success ? facultyResult.facultyList : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-12">
         {/* Header Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">Manage your feedback instances</p>
+        <div className="text-center mb-6 sm:mb-10 pt-8 sm:pt-0">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Admin Dashboard</h1>
+          <p className="mt-2 text-sm sm:text-lg text-slate-600">Manage your feedback infrastructure</p>
         </div>
 
         {/* Instances Grid Section */}
-        <AdminInstancesGrid instances={instances} />
+        <section className="space-y-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 px-1">Feedback Instances</h2>
+          <AdminInstancesGrid instances={instances} />
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12">
           {/* Course Offerings Section */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Course Offerings</h2>
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-              <div className="flex-shrink-0">
+          <section className="space-y-4 sm:space-y-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 border-b border-slate-200 pb-2">Course Offerings</h2>
+            <div className="flex flex-col xl:flex-row gap-6 sm:gap-8 items-start">
+              <div className="w-full xl:w-64 flex-shrink-0">
                 <CourseOfferingsSidebar offerings={offerings} />
               </div>
-              <div className="flex-grow">
+              <div className="w-full flex-grow">
                 <CourseOfferingForm userId={user.id} templates={templates} />
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Faculty Section */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Faculty Management</h2>
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-              <div className="flex-shrink-0">
+          <section className="space-y-4 sm:space-y-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 border-b border-slate-200 pb-2">Faculty Management</h2>
+            <div className="flex flex-col xl:flex-row gap-6 sm:gap-8 items-start">
+              <div className="w-full xl:w-64 flex-shrink-0">
                 <FacultySidebar facultyList={facultyList} />
               </div>
-              <div className="flex-grow">
+              <div className="w-full flex-grow">
                 <FacultyForm userId={user.id} />
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
 
