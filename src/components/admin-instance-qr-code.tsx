@@ -16,7 +16,7 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
 
   useEffect(() => {
     QRCode.toDataURL(feedbackUrl, {
-      width: 256,
+      width: 512,
       margin: 2,
       color: {
         dark: '#1e293b',
@@ -77,11 +77,11 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
             {/* Modal Content */}
             <div className="flex flex-col items-center space-y-6">
               {/* Large QR Code Image */}
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm">
                 <img 
                   src={qrCodeDataUrl} 
                   alt={`QR code for ${instanceTitle} feedback`}
-                  className="w-full max-w-[24rem] h-auto aspect-square"
+                  className="w-full max-w-[20rem] sm:max-w-[32rem] md:max-w-[40rem] h-auto aspect-square"
                 />
               </div>
 
