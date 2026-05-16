@@ -59,7 +59,7 @@ function RatingBar({
 }) {
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-sm">
+      <div className="flex justify-between text-xs sm:text-sm">
         <span className="text-slate-600">{label}</span>
         <span className="text-slate-900 font-medium">
           {percentage}% ({count})
@@ -81,6 +81,19 @@ export default function AdminInstanceFeedback({
   feedback: initialFeedback,
 }: AdminInstanceFeedbackProps) {
   const [feedback, setFeedback] = useState(initialFeedback);
+  const [expandedCourseIds, setExpandedCourseIds] = useState<Set<string>>(new Set());
+
+  const toggleCourse = (courseId: string) => {
+    setExpandedCourseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) {
+        next.delete(courseId);
+      } else {
+        next.add(courseId);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const ably = new Realtime(process.env.NEXT_PUBLIC_ABLY_API_KEY || "");
@@ -211,11 +224,11 @@ export default function AdminInstanceFeedback({
   );
 
   return (
-    <div className="space-y-6 h-full w-full">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 sm:space-y-6 h-full w-full">
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="mb-4 sm:mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
               Feedback Results
             </h2>
             <p className="text-sm text-slate-600">
@@ -258,53 +271,73 @@ export default function AdminInstanceFeedback({
             join code.
           </div>
         ) : (
-          <div className="space-y-8">
-            {feedback.map((courseFeedback) => (
-              <div
-                key={courseFeedback.courseId}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {courseFeedback.courseTitle} <span className="text-slate-500 font-normal">({courseFeedback.facultyName})</span>
-                  </h3>
-                  <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-                    {courseFeedback.totalResponses}{" "}
-                    {courseFeedback.totalResponses === 1
-                      ? "response"
-                      : "responses"}
-                  </span>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  {courseFeedback.questions.map(question => (
-                    <div key={question.questionId} className="space-y-3">
-                      <h4 className="text-sm font-medium text-slate-700">
-                        {question.text}
-                      </h4>
-                      <RatingBar
-                        label="Good"
-                        percentage={question.percentages.good}
-                        count={question.ratings.good}
-                        color="bg-emerald-500"
-                      />
-                      <RatingBar
-                        label="Average"
-                        percentage={question.percentages.average}
-                        count={question.ratings.average}
-                        color="bg-amber-500"
-                      />
-                      <RatingBar
-                        label="Bad"
-                        percentage={question.percentages.bad}
-                        count={question.ratings.bad}
-                        color="bg-rose-500"
-                      />
+          <div className="space-y-4">
+            {feedback.map((courseFeedback) => {
+              const isExpanded = expandedCourseIds.has(courseFeedback.courseId);
+              
+              return (
+                <div
+                  key={courseFeedback.courseId}
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition-all duration-200 hover:border-slate-300"
+                >
+                  <button
+                    onClick={() => toggleCourse(courseFeedback.courseId)}
+                    className="flex w-full items-center justify-between p-4 sm:p-5 text-left focus:outline-none"
+                  >
+                    <div className="flex flex-col gap-0.5 pr-4">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-900 leading-tight">
+                        {courseFeedback.courseTitle}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-500">
+                        {courseFeedback.facultyName} • {courseFeedback.totalResponses}{" "}
+                        {courseFeedback.totalResponses === 1 ? "response" : "responses"}
+                      </p>
                     </div>
-                  ))}
+                    <div className={`rounded-full bg-slate-200 p-1.5 text-slate-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  <div 
+                    className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="border-t border-slate-200 p-4 sm:p-5 pt-0">
+                        <div className="mt-4 sm:mt-6 grid gap-4 sm:gap-6 md:grid-cols-2">
+                          {courseFeedback.questions.map(question => (
+                            <div key={question.questionId} className="space-y-3">
+                              <h4 className="text-sm font-medium text-slate-700">
+                                {question.text}
+                              </h4>
+                              <RatingBar
+                                label="Good"
+                                percentage={question.percentages.good}
+                                count={question.ratings.good}
+                                color="bg-emerald-500"
+                              />
+                              <RatingBar
+                                label="Average"
+                                percentage={question.percentages.average}
+                                count={question.ratings.average}
+                                color="bg-amber-500"
+                              />
+                              <RatingBar
+                                label="Bad"
+                                percentage={question.percentages.bad}
+                                count={question.ratings.bad}
+                                color="bg-rose-500"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
