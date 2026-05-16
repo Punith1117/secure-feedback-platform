@@ -2,7 +2,7 @@
 
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { eq, and, inArray, count } from "drizzle-orm";
+import { eq, and, inArray, count, asc } from "drizzle-orm";
 import {
   courses,
   courseOfferings,
@@ -11,8 +11,9 @@ import {
   feedbackSubmissions,
   studentAccessCodes,
   templates,
+  faculty
 } from "@/lib/db/schema";
-import type { Course, CourseOffering, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats, Template } from "@/lib/db/schema";
+import type { Course, CourseOffering, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats, Template, Faculty } from "@/lib/db/schema";
 import { Realtime } from "ably";
 
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
@@ -127,13 +128,17 @@ export async function createCourse(
   instanceId: string,
   courseOfferingId: string,
   userId: string,
-): Promise<{ success: true; course: Course & { title: string; templateName: string } } | { success: false; error: string }> {
+  facultyId: string
+): Promise<{ success: true; course: Course & { title: string; templateName: string; facultyName: string } } | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
   if (!isValidUuid(courseOfferingId)) {
     return { success: false, error: "Valid course offering ID is required" };
+  }
+  if (!isValidUuid(facultyId)) {
+    return { success: false, error: "Valid faculty ID is required" };
   }
 
   if (!userId?.trim()) {
@@ -149,23 +154,27 @@ export async function createCourse(
     const [course] = await db.insert(courses).values({
       instanceId,
       courseOfferingId,
+      facultyId
       // createdAt, updatedAt rely on database defaults
     }).returning();
 
     // Fetch the title and templateName to return a complete object
-    const [offering] = await db.select({ 
-        title: courseOfferings.title,
-        templateName: templates.name
-      })
+    const [offering] = await db.select({
+      title: courseOfferings.title,
+      templateName: templates.name,
+      facultyName: faculty.name
+    })
       .from(courseOfferings)
       .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
+      .innerJoin(faculty, eq(courses.facultyId, faculty.id))
+      .innerJoin(courses, eq(courseOfferings.id, courses.courseOfferingId))
       .where(eq(courseOfferings.id, courseOfferingId))
       .limit(1);
 
-    return { success: true, course: { ...course, title: offering?.title || "Unknown", templateName: offering?.templateName || "Unknown" } };
+    return { success: true, course: { ...course, title: offering?.title || "Unknown", templateName: offering?.templateName || "Unknown", facultyName: offering?.facultyName || "Unknown" } };
   } catch (error) {
     console.error("Failed to create course:", error);
-    return { success: false, error: "Failed to create course" };
+    return { success: false, error: "Failed to create course. This course may already exist" };
   }
 }
 
@@ -199,6 +208,34 @@ export async function createCourseOffering(
   } catch (error) {
     console.error("Failed to create course offering:", error);
     return { success: false, error: "Failed to create course offering. You might already have an offering with this title." };
+  }
+}
+
+export async function getFaculty(
+  userId: string,
+): Promise<
+  | { success: true; facultyList: Faculty[] }
+  | { success: false; error: string }
+> {
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  try {
+    const facultyList = await db
+      .select()
+      .from(faculty)
+      .where(eq(faculty.userId, userId))
+      .orderBy(asc(faculty.name));
+
+    return { success: true, facultyList };
+  } catch (error) {
+    console.error("Failed to fetch faculty:", error);
+
+    return {
+      success: false,
+      error: "Failed to fetch faculty",
+    };
   }
 }
 
@@ -242,6 +279,53 @@ export async function getCourseOfferings(
   }
 }
 
+export async function createFaculty(
+  name: string,
+  userId: string,
+): Promise<
+  | { success: true; faculty: Faculty }
+  | { success: false; error: string }
+> {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return {
+      success: false,
+      error: "Faculty name is required",
+    };
+  }
+
+  if (!userId?.trim()) {
+    return {
+      success: false,
+      error: "User ID is required",
+    };
+  }
+
+  try {
+    const [createdFaculty] = await db
+      .insert(faculty)
+      .values({
+        userId,
+        name: trimmedName,
+      })
+      .returning();
+
+    return {
+      success: true,
+      faculty: createdFaculty,
+    };
+  } catch (error) {
+    console.error("Failed to create faculty:", error);
+
+    return {
+      success: false,
+      error:
+        "Failed to create faculty. Faculty with this name may already exist.",
+    };
+  }
+}
+
 export async function getCoursesByInstanceId(
   instanceId: string,
   userId: string,
@@ -274,7 +358,7 @@ export async function getCoursesByInstanceId(
       .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
       .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
       .where(eq(courses.instanceId, instanceId));
-      
+
     return { success: true, courses: coursesResult };
   } catch (error) {
     console.error("Failed to fetch courses for instance:", error);
@@ -825,7 +909,7 @@ export async function submitFeedback(
     // Publish to Ably after successful submission
     try {
       const ably = new Realtime(process.env.ABLY_API_KEY || "");
-      
+
       // Publish feedback response
       const feedbackChannel = ably.channels.get(`feedback:${joinCode}`);
       await feedbackChannel.publish("feedback-response", {
@@ -833,7 +917,7 @@ export async function submitFeedback(
         responses,
         timestamp: new Date().toISOString(),
       });
-      
+
       // Publish access code usage update
       const accessCodeChannel = ably.channels.get(`access-codes:${joinCode}`);
       await accessCodeChannel.publish("access-code-used", {
@@ -842,7 +926,7 @@ export async function submitFeedback(
         instanceId: instance.id,
         timestamp: new Date().toISOString(),
       });
-      
+
       ably.close();
     } catch (ablyError) {
       console.error("Failed to publish to Ably:", ablyError);
