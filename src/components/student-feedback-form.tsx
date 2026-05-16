@@ -7,7 +7,15 @@ import { useState } from "react";
 type Rating = "good" | "average" | "bad";
 
 interface StudentFeedbackFormProps {
-  courses: Course[];
+  courses: {
+    id: string;
+    title: string;
+    facultyName: string;
+    questions: {
+      id: string;
+      text: string;
+    }[];
+  }[];
   joinCode: string;
 }
 
@@ -71,46 +79,30 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
 
       {courses.map((course) => (
         <div key={course.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-6 text-xl font-semibold text-slate-800">{course.title}</h2>
+          <h2 className="mb-6 text-xl font-semibold text-slate-800">
+            {course.title} <span className="text-slate-500 text-base font-normal">({course.facultyName})</span>
+          </h2>
 
           <div className="space-y-6">
-            {/* Question 1: Rate lecture quality */}
-            <div>
-              <p className="mb-3 text-slate-700">Rate lecture quality</p>
-              <div className="flex gap-4">
-                {(["good", "average", "bad"] as Rating[]).map((rating) => (
-                  <label key={rating} className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="radio"
-                      name={`lecture_quality_${course.id}`}
-                      value={rating}
-                      defaultChecked={rating === "average"}
-                      className="h-4 w-4 accent-blue-600"
-                    />
-                    <span className="capitalize text-slate-700">{rating}</span>
-                  </label>
-                ))}
+            {course.questions.map((question) => (
+              <div key={question.id}>
+                <p className="mb-3 text-slate-700">{question.text}</p>
+                <div className="flex gap-4">
+                  {(["good", "average", "bad"] as Rating[]).map((rating) => (
+                    <label key={rating} className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`rating_${course.id}_${question.id}`}
+                        value={rating}
+                        defaultChecked={rating === "average"}
+                        className="h-4 w-4 accent-blue-600"
+                      />
+                      <span className="capitalize text-slate-700">{rating}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* Question 2: Rate course content */}
-            <div>
-              <p className="mb-3 text-slate-700">Rate course content</p>
-              <div className="flex gap-4">
-                {(["good", "average", "bad"] as Rating[]).map((rating) => (
-                  <label key={rating} className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="radio"
-                      name={`course_content_${course.id}`}
-                      value={rating}
-                      defaultChecked={rating === "average"}
-                      className="h-4 w-4 accent-blue-600"
-                    />
-                    <span className="capitalize text-slate-700">{rating}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       ))}

@@ -563,27 +563,51 @@ export async function getFeedbackInstanceForStudent(
 
 export async function getCoursesByInstanceIdForStudent(
   instanceId: string,
-): Promise<{ success: true; courses: (Course & { title: string; templateName: string })[] } | { success: false; error: string }> {
+): Promise<{ 
+  success: true; 
+  courses: {
+    id: string;
+    title: string;
+    facultyName: string;
+    questions: { id: string; text: string; }[];
+  }[] 
+} | { success: false; error: string }> {
   if (!isValidUuid(instanceId)) {
     return { success: false, error: "Valid feedback instance ID is required" };
   }
 
   try {
-    const coursesResult = await db
-      .select({
-        id: courses.id,
-        instanceId: courses.instanceId,
-        courseOfferingId: courses.courseOfferingId,
-        createdAt: courses.createdAt,
-        updatedAt: courses.updatedAt,
-        title: courseOfferings.title,
-        templateName: templates.name,
-      })
-      .from(courses)
-      .innerJoin(courseOfferings, eq(courses.courseOfferingId, courseOfferings.id))
-      .innerJoin(templates, eq(courseOfferings.templateId, templates.id))
-      .where(eq(courses.instanceId, instanceId));
-    return { success: true, courses: coursesResult };
+    const coursesData = await db.query.courses.findMany({
+      where: eq(courses.instanceId, instanceId),
+      with: {
+        faculty: true,
+        courseOffering: {
+          with: {
+            template: {
+              with: {
+                templateQuestions: {
+                  with: {
+                    question: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const formattedCourses = coursesData.map(c => ({
+      id: c.id,
+      title: c.courseOffering.title,
+      facultyName: c.faculty?.name || "Unknown Faculty",
+      questions: c.courseOffering.template?.templateQuestions.map(tq => ({
+        id: tq.question.id,
+        text: tq.question.question
+      })) || []
+    }));
+
+    return { success: true, courses: formattedCourses };
   } catch (error) {
     console.error("Failed to fetch courses for student:", error);
     return { success: false, error: "Failed to fetch courses" };
