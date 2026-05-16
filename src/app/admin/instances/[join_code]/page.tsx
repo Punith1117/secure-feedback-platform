@@ -70,8 +70,11 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
     <div className="min-h-screen bg-slate-50 p-4">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 py-8">
         <AdminInstanceFeedback
-          instanceTitle={instanceResult.instance.title}
-          joinCode={instanceResult.instance.joinCode}
+          instanceId={instance.id}
+          instanceTitle={instance.title}
+          joinCode={instance.joinCode}
+          isActive={instance.isActive}
+          userId={session.user.id}
           feedback={feedbackData}
         />
         

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Realtime } from "ably";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { toggleInstanceStatus } from "@/app/actions";
+import { useRouter } from "next/navigation";
 
 type Rating = "good" | "average" | "bad";
 
@@ -29,8 +31,11 @@ interface CourseFeedbackWithPercentages {
 }
 
 interface AdminInstanceFeedbackProps {
+  instanceId: string;
   instanceTitle: string;
   joinCode: string;
+  isActive: boolean;
+  userId: string;
   feedback: CourseFeedbackWithPercentages[];
 }
 
@@ -76,12 +81,39 @@ function RatingBar({
 }
 
 export default function AdminInstanceFeedback({
+  instanceId,
   instanceTitle,
   joinCode,
+  isActive: initialIsActive,
+  userId,
   feedback: initialFeedback,
 }: AdminInstanceFeedbackProps) {
   const [feedback, setFeedback] = useState(initialFeedback);
   const [expandedCourseIds, setExpandedCourseIds] = useState<Set<string>>(new Set());
+  const [isActive, setIsActive] = useState(initialIsActive);
+  const [isToggling, setIsToggling] = useState(false);
+  const router = useRouter();
+
+  const handleToggleActive = async () => {
+    if (isToggling) return;
+    setIsToggling(true);
+    const nextActive = !isActive;
+    
+    try {
+      const result = await toggleInstanceStatus(instanceId, nextActive, userId);
+      if (result.success) {
+        setIsActive(nextActive);
+        router.refresh();
+      } else {
+        alert(result.error || "Failed to update status");
+      }
+    } catch (error) {
+      console.error("Toggle error:", error);
+      alert("An unexpected error occurred");
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   const toggleCourse = (courseId: string) => {
     setExpandedCourseIds((prev) => {
@@ -238,11 +270,31 @@ export default function AdminInstanceFeedback({
               Join code: <span className="font-mono">{joinCode}</span>
             </p>
           </div>
-          <button
-            onClick={generatePDF}
-            disabled={feedback.length === 0 || totalSubmissions === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-          >
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 shadow-sm">
+              <span className={`text-xs font-semibold uppercase tracking-wider ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {isActive ? 'Active' : 'Inactive'}
+              </span>
+              <button
+                onClick={handleToggleActive}
+                disabled={isToggling}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed ${
+                  isActive ? 'bg-emerald-500' : 'bg-slate-300'
+                }`}
+                aria-pressed={isActive}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    isActive ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <button
+              onClick={generatePDF}
+              disabled={feedback.length === 0 || totalSubmissions === 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >
             <svg
               className="h-4 w-4"
               fill="none"
@@ -259,6 +311,7 @@ export default function AdminInstanceFeedback({
             </svg>
             Download Report
           </button>
+          </div>
         </div>
 
         {feedback.length === 0 ? (

@@ -406,6 +406,38 @@ export async function updateInstanceTitle(
   }
 }
 
+export async function toggleInstanceStatus(
+  instanceId: string,
+  isActive: boolean,
+  userId: string,
+): Promise<{ success: true; instance: FeedbackInstance } | { success: false; error: string }> {
+  if (!isValidUuid(instanceId)) {
+    return { success: false, error: "Valid feedback instance ID is required" };
+  }
+
+  if (!userId?.trim()) {
+    return { success: false, error: "User ID is required" };
+  }
+
+  const ownership = await validateInstanceOwnership(instanceId, userId);
+  if (!ownership.success) {
+    return ownership;
+  }
+
+  try {
+    const [updatedInstance] = await db
+      .update(feedbackInstances)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(feedbackInstances.id, instanceId))
+      .returning();
+
+    return { success: true, instance: updatedInstance };
+  } catch (error) {
+    console.error("Failed to toggle instance status:", error);
+    return { success: false, error: "Failed to toggle instance status" };
+  }
+}
+
 export async function deleteCourse(
   courseId: string,
   userId: string,
@@ -771,6 +803,10 @@ export async function submitFeedback(
 
   if (!instance) {
     return { success: false, error: "Feedback instance not found" };
+  }
+
+  if (!instance.isActive) {
+    return { success: false, error: "This feedback instance is currently inactive and not accepting submissions" };
   }
 
   // Find the access code for this instance

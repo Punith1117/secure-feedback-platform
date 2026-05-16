@@ -19,6 +19,26 @@ export default async function FeedbackPage({ params }: { params: Promise<{ join_
   }
 
   const instance = instanceResult.instance;
+
+  if (!instance.isActive) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4 text-center">
+        <div className="w-full max-w-xl rounded-3xl border border-amber-200 bg-white p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold text-amber-800">Feedback Inactive</h1>
+          <p className="mt-4 text-slate-600">This feedback instance is currently inactive and not accepting responses.</p>
+          <div className="mt-6">
+            <a 
+              href="/"
+              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition-all hover:bg-slate-800 shadow-sm"
+            >
+              Go Back Home
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const coursesResult = await getCoursesByInstanceIdForStudent(instance.id);
   const courses = coursesResult.success ? coursesResult.courses : [];
 
