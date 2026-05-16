@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { createCourse, deleteCourse, updateInstanceTitle } from "@/app/actions";
 import { useSession } from "@/lib/auth-client";
-import type { Course, CourseOffering } from "@/lib/db/schema";
+import type { Course, CourseOffering, Faculty } from "@/lib/db/schema";
 
 type AdminInstanceCoursesProps = {
   instanceId: string;
   joinCode: string;
   instanceTitle: string;
-  initialCourses: (Course & { title: string; templateName: string })[];
+  initialCourses: (Course & { title: string; templateName: string; facultyName?: string })[];
   courseOfferings: (CourseOffering & { templateName: string })[];
+  facultyList: Faculty[];
 };
 
 export default function AdminInstanceCourses({
@@ -19,9 +20,11 @@ export default function AdminInstanceCourses({
   instanceTitle,
   initialCourses,
   courseOfferings,
+  facultyList,
 }: AdminInstanceCoursesProps) {
-  const [courses, setCourses] = useState<(Course & { title: string; templateName: string })[]>(initialCourses);
+  const [courses, setCourses] = useState<(Course & { title: string; templateName: string; facultyName?: string })[]>(initialCourses);
   const [selectedCourseOfferingId, setSelectedCourseOfferingId] = useState("");
+  const [selectedFacultyId, setSelectedFacultyId] = useState("");
   const [instanceTitleLocal, setInstanceTitleLocal] = useState(instanceTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(instanceTitle);
@@ -93,6 +96,11 @@ export default function AdminInstanceCourses({
       return;
     }
 
+    if (!selectedFacultyId) {
+      setMessage({ type: "error", text: "Please select a faculty member." });
+      return;
+    }
+
     if (!session?.user?.id) {
       setMessage({ type: "error", text: "You must be logged in to add a course." });
       return;
@@ -100,11 +108,12 @@ export default function AdminInstanceCourses({
 
     setIsSubmitting(true);
 
-    const result = await createCourse(instanceId, selectedCourseOfferingId, session.user.id);
+    const result = await createCourse(instanceId, selectedCourseOfferingId, session.user.id, selectedFacultyId);
 
     if (result.success) {
       setCourses((current) => [...current, result.course]);
       setSelectedCourseOfferingId("");
+      setSelectedFacultyId("");
       setMessage({ type: "success", text: "Course added successfully." });
     } else {
       setMessage({ type: "error", text: result.error || "Failed to add course." });
@@ -167,25 +176,48 @@ return (
 
         <div className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="courseOffering" className="block text-sm font-medium text-slate-700">
-                Course Offering
-              </label>
-              <select
-                id="courseOffering"
-                name="courseOffering"
-                value={selectedCourseOfferingId}
-                onChange={(event) => setSelectedCourseOfferingId(event.target.value)}
-                className="mt-2 block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
-                disabled={isSubmitting}
-              >
-                <option value="" disabled>Select a course offering</option>
-                {courseOfferings.map((offering) => (
-                  <option key={offering.id} value={offering.id}>
-                    {offering.title} ({offering.templateName})
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="courseOffering" className="block text-sm font-medium text-slate-700">
+                  Course Offering
+                </label>
+                <select
+                  id="courseOffering"
+                  name="courseOffering"
+                  value={selectedCourseOfferingId}
+                  onChange={(event) => setSelectedCourseOfferingId(event.target.value)}
+                  className="mt-2 block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
+                  disabled={isSubmitting}
+                >
+                  <option value="" disabled>Select a course offering</option>
+                  {courseOfferings.map((offering) => (
+                    <option key={offering.id} value={offering.id}>
+                      {offering.title} ({offering.templateName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="faculty" className="block text-sm font-medium text-slate-700">
+                  Faculty Member
+                </label>
+                <select
+                  id="faculty"
+                  name="faculty"
+                  value={selectedFacultyId}
+                  onChange={(event) => setSelectedFacultyId(event.target.value)}
+                  className="mt-2 block w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
+                  disabled={isSubmitting}
+                >
+                  <option value="" disabled>Select a faculty member</option>
+                  {facultyList.map((faculty) => (
+                    <option key={faculty.id} value={faculty.id}>
+                      {faculty.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {message && (
@@ -221,15 +253,22 @@ return (
             No courses have been added yet.
           </div>
         ) : (
-<ul className="space-y-3">
+          <ul className="space-y-3">
             {courses.map((course) => (
               <li key={course.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col">
                     <p className="font-medium text-slate-900">{course.title}</p>
-                    <span className="mt-1 w-fit rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                      {course.templateName}
-                    </span>
+                    <div className="mt-1 flex gap-2">
+                      <span className="w-fit rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        {course.templateName}
+                      </span>
+                      {course.facultyName && (
+                        <span className="w-fit rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                          {course.facultyName}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"

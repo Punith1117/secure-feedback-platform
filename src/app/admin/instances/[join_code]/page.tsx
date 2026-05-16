@@ -1,4 +1,4 @@
-import { getAccessCodesByInstanceId, getCoursesByInstanceId, getFeedbackResponsesByInstanceId, getInstanceByJoinCode, getCourseOfferings } from "@/app/actions";
+import { getAccessCodesByInstanceId, getCoursesByInstanceId, getFeedbackResponsesByInstanceId, getInstanceByJoinCode, getCourseOfferings, getFaculty } from "@/app/actions";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import AdminInstanceAccessCodes from "@/components/admin-instance-access-codes";
@@ -63,6 +63,9 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
   const offeringsResult = await getCourseOfferings(session.user.id);
   const courseOfferings = offeringsResult.success ? offeringsResult.offerings : [];
 
+  const facultyResult = await getFaculty(session.user.id);
+  const facultyList = facultyResult.success ? facultyResult.facultyList : [];
+
   return (
     <div className="min-h-screen bg-slate-50 p-4">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 py-8">
@@ -84,6 +87,7 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
             joinCode={instanceResult.instance.joinCode}
             initialCourses={courses}
             courseOfferings={courseOfferings}
+            facultyList={facultyList}
           />
           <AdminInstanceAccessCodes
             instanceId={instanceResult.instance.id}
