@@ -1,244 +1,125 @@
 # Secure Feedback Platform
 
-A modern, secure feedback collection system built with Next.js, designed for educational institutions to gather anonymous student feedback on courses and lectures.
+A web-based system for collecting anonymous student feedback using one-time access codes and real-time data synchronization.
 
-## 🚀 Features
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.31-C5F74F?style=flat-square&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 
-### For Administrators
-- **Secure Authentication**: User authentication with Better Auth
-- **Feedback Instance Management**: Create and manage multiple feedback sessions
-- **Course Management**: Add and organize courses within feedback instances
-- **Access Code Generation**: Generate unique access codes for students
-- **Real-time Analytics**: View feedback statistics and responses in real-time
-- **PDF Export**: Export feedback data as PDF reports
+## System Overview
 
-### For Students
-- **Anonymous Feedback**: Submit feedback anonymously using access codes
-- **Simple Interface**: Clean, intuitive feedback submission form
-- **Rating System**: Rate lecture quality and course content (Good/Average/Bad)
-- **One-time Use**: Each access code can only be used once
+This platform facilitates anonymous feedback collection for educational institutions. It is designed to solve two primary problems: ensuring the integrity of anonymous responses and providing immediate, real-time feedback to administrators.
 
-## 🛠 Tech Stack
+### Core Engineering Features
 
-![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Drizzle ORM](https://img.shields.io/badge/Drizzle-000000?style=for-the-badge&logo=drizzle&logoColor=white)
-![Better Auth](https://img.shields.io/badge/BetterAuth-000000?style=for-the-badge&logo=betterauth&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+*   **Transactional Integrity**: Feedback submissions are processed within database transactions to ensure that an access code is marked as "used" if and only if the response data is successfully recorded.
+*   **Real-time Pub/Sub**: Integration with **Ably** allows the admin dashboard to receive sub-second updates as students submit feedback, without polling the database.
+*   **Decoupled Data Modeling**: The schema separates feedback instances, course offerings, and faculty members into a normalized structure, allowing for reusable templates and flexible reporting.
+*   **End-to-End Type Safety**: Shared TypeScript types across the database schema (Drizzle), server actions, and frontend components reduce runtime errors and improve developer experience.
 
-- **Frontend**: Next.js 16.2.4, React 19.2.4, TypeScript
-- **Styling**: TailwindCSS 4
-- **Database**: PostgreSQL
-- **ORM**: Drizzle ORM
-- **Authentication**: Better Auth
-- **Real-time**: Ably
-- **PDF Generation**: jsPDF
-- **Package Manager**: pnpm
+---
 
-## 📋 Prerequisites
+## Technical Stack
 
-- Node.js 18+ 
-- PostgreSQL database (Neon recommended)
-- Ably API key for real-time features
+*   **Framework**: Next.js 15 (App Router) with React 19 Server Components.
+*   **Authentication**: Better Auth (supporting Role-Based Access Control).
+*   **Database**: PostgreSQL hosted on Neon, managed via Drizzle ORM.
+*   **Real-time**: Ably (WebSocket-based Pub/Sub).
+*   **Reporting**: jsPDF for client-side report generation.
+*   **Styling**: Tailwind CSS 4.0.
 
-## 🚀 Quick Start
+---
 
-### 1. Clone the Repository
+## System Architecture
 
-```bash
-git clone <repository-url>
-cd secure-feedback-platform
+The application follows a **Modular Monolith** pattern, leveraging Next.js Server Actions for secure, type-safe communication between the client and the database.
+
+```mermaid
+graph TD
+    subgraph Client_Layer [Client Layer]
+        A[Admin Dashboard]
+        B[Student Submission Form]
+    end
+
+    subgraph Logic_Layer [Logic Layer - Next.js Server Actions]
+        C[Session & RBAC Validation]
+        D[Submission Transaction]
+        E[Pub/Sub Broadcast]
+    end
+
+    subgraph Data_Layer [Data Layer]
+        F[(PostgreSQL - Drizzle)]
+        G[Ably Pub/Sub]
+    end
+
+    A -->|Auth Request| C
+    B -->|Submit Feedback| D
+    D -->|Atomic Update| F
+    D -->|Trigger Update| E
+    E -->|Broadcast| G
+    G -->|WebSocket Sync| A
 ```
 
-### 2. Install Dependencies
+### Data Modeling & Schema
+The database schema is designed for normalization and referential integrity:
+*   **`feedback_instances`**: Represents a single feedback session (e.g., "Semester 1 Feedback").
+*   **`course_offerings`**: Reusable course definitions linked to evaluation templates.
+*   **`student_access_codes`**: Unique identifiers generated per instance to control access and ensure one-time usage.
+*   **`feedback_submissions`**: Transactional records linking an access code usage to a specific instance.
+*   **`feedback_responses`**: Normalized storage for individual question ratings.
 
-```bash
-pnpm install
-```
+### Security Design
+1.  **Access Control**: Administrative routes are protected via server-side session validation.
+2.  **Anonymization**: Submissions are decoupled from student identities. While an access code proves authorization, it is not linked back to a user profile in the database.
+3.  **One-Time Use**: The system enforces a strict "claim-and-consume" logic within a transaction to prevent replay attacks or multiple submissions with the same code.
 
-### 3. Environment Setup
+---
 
-Copy the environment example file:
+## Development & Deployment
 
-```bash
-cp .env.example .env
-```
+### Prerequisites
+*   Node.js 20+
+*   pnpm
+*   PostgreSQL (Neon recommended)
 
-Update `.env` with your configuration:
+### Setup
 
-```env
-DATABASE_URL="postgresql://user:password@host/neondb?sslmode=require"
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=your-secret-key
-ABLY_API_KEY=your-ably-api-key
-NEXT_PUBLIC_ABLY_API_KEY=your-ably-api-key
-```
+1.  **Install dependencies**
+    ```bash
+    pnpm install
+    ```
 
-### 4. Database Setup
+2.  **Environment Variables**
+    Configure `.env` with the following:
+    ```env
+    DATABASE_URL="your_postgres_url"
+    BETTER_AUTH_SECRET="your_secret"
+    BETTER_AUTH_URL="http://localhost:3000"
+    ABLY_API_KEY="your_ably_key"
+    NEXT_PUBLIC_ABLY_API_KEY="your_ably_key"
+    ```
 
-Generate and run database migrations:
+3.  **Database Migration**
+    ```bash
+    pnpm db:generate
+    pnpm db:migrate
+    ```
 
-```bash
-pnpm db:generate
-pnpm db:migrate
-```
+4.  **Run Development Server**
+    ```bash
+    pnpm dev
+    ```
 
-### 5. Start Development Server
+---
 
-```bash
-pnpm dev
-```
+## Roadmap
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+*   **Testing**: Implementation of Playwright for end-to-end testing of the submission flow.
+*   **Analytics**: Historical trend analysis for faculty performance.
+* **AI-Assisted Insights**: Automated clustering and summarization of qualitative feedback to identify recurring concerns and trends.
+*   **DevOps**: GitHub Actions for automated linting and schema validation.
 
-## 📁 Project Structure
-
-```
-src/
-├── app/                    # Next.js app router
-│   ├── actions.ts         # Server actions
-│   ├── api/              # API routes
-│   ├── auth/             # Authentication pages
-│   ├── feedback/         # Student feedback pages
-│   └── admin/            # Admin dashboard pages
-├── components/            # React components
-│   ├── admin-*.tsx       # Admin-specific components
-│   ├── student-*.tsx     # Student-specific components
-│   └── auth/             # Authentication components
-├── lib/                  # Utility libraries
-│   ├── auth.ts           # Authentication configuration
-│   ├── db/               # Database configuration and schema
-│   └── utils.ts          # Utility functions
-└── types/                # TypeScript type definitions
-```
-
-## 🏗 Architecture
-
-### Database Schema
-
-The application uses a relational database with the following main entities:
-
-- **Users**: Admin accounts for managing feedback instances
-- **Feedback Instances**: Individual feedback sessions with unique join codes
-- **Courses**: Courses associated with feedback instances
-- **Student Access Codes**: One-time codes for student access
-- **Feedback Submissions**: Student feedback submissions
-- **Feedback Responses**: Individual ratings for courses
-
-### Authentication Flow
-
-1. Admin users sign up/sign in through Better Auth
-2. Sessions are managed securely with HTTP-only cookies
-3. Protected routes require authentication
-
-### Feedback Collection Flow
-
-1. Admin creates a feedback instance with courses
-2. System generates unique access codes for students
-3. Students use join codes + access codes to submit feedback
-4. Feedback is stored anonymously with ratings
-5. Admin can view analytics and export reports
-
-## 🔧 Available Scripts
-
-```bash
-# Development
-pnpm dev              # Start development server
-pnpm build            # Build for production
-pnpm start            # Start production server
-pnpm lint             # Run ESLint
-
-# Database
-pnpm db:generate      # Generate database migrations
-pnpm db:migrate       # Run database migrations
-pnpm db:studio        # Open Drizzle Studio
-```
-
-## 🔐 Security Features
-
-- **Access Control**: Role-based access (Admin vs Student)
-- **One-time Codes**: Each access code can only be used once
-- **Secure Authentication**: JWT-based authentication with Better Auth
-- **Data Validation**: Input validation and sanitization
-- **Environment Variables**: Sensitive data stored in environment variables
-
-## 📊 Data Model
-
-### Feedback Rating System
-
-Students can rate two aspects of each course:
-
-1. **Lecture Quality**: 
-   - Good
-   - Average  
-   - Bad
-
-2. **Course Content**:
-   - Good
-   - Average
-   - Bad
-
-### Access Code System
-
-- **Join Codes**: 8-character codes for feedback instances
-- **Access Codes**: 8-character codes for individual student access
-- **One-time Use**: Each access code becomes invalid after use
-
-## 🚀 Deployment
-
-### Environment Variables
-
-Ensure these environment variables are set in production:
-
-```env
-DATABASE_URL=          # PostgreSQL connection string
-BETTER_AUTH_URL=       # Your application URL
-BETTER_AUTH_SECRET=    # Random secret string
-ABLY_API_KEY=          # Ably API key for real-time features
-NEXT_PUBLIC_ABLY_API_KEY= # Public Ably API key
-```
-
-### Vercel Deployment (Recommended)
-
-1. Connect your repository to Vercel
-2. Configure environment variables in Vercel dashboard
-3. Deploy automatically on git push
-
-### Other Platforms
-
-The application can be deployed to any platform supporting Node.js:
-
-```bash
-pnpm build
-pnpm start
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-
-## 🆘 Support
-
-For support and questions:
-
-- Create an issue in the GitHub repository
-- Check the documentation in the `/docs` folder
-- Review the database schema in `src/lib/db/schema.ts`
-
-## 🔮 Future Enhancements
-
-- [ ] Email notifications for new feedback
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support
-- [ ] Mobile app
-- [ ] Integration with learning management systems
-- [ ] Custom rating scales
-- [ ] Comment/feedback text fields
+---
+## License
+MIT License.
