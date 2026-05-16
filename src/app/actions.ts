@@ -19,12 +19,11 @@ import { Realtime } from "ably";
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
 
 type Rating = "good" | "average" | "bad";
-type QuestionType = "lecture_quality" | "course_content";
 
 interface FeedbackResponseInput {
   courseId: string;
-  lectureQualityRating: Rating;
-  courseContentRating: Rating;
+  questionId: string;
+  rating: number; // 3 = good, 2 = average, 1 = bad
 }
 
 
@@ -863,6 +862,7 @@ export async function submitFeedback(
     return { success: false, error: "Failed to fetch courses for validation" };
   }
 
+  // Find valid questions for the courses (optional extra validation could be added, but we assume questionId is valid for the instance)
   for (let i = 0; i < responses.length; i++) {
     const response = responses[i];
 
@@ -876,20 +876,14 @@ export async function submitFeedback(
       return { success: false, error: `Course not found in this feedback instance` };
     }
 
-    // Validate lectureQualityRating
-    if (!response.lectureQualityRating) {
-      return { success: false, error: `Missing lecture quality rating in response ${i + 1}` };
-    }
-    if (!validRatings.includes(response.lectureQualityRating)) {
-      return { success: false, error: `Invalid lecture quality rating value in response ${i + 1}` };
+    // Validate questionId is provided
+    if (!response.questionId || !isValidUuid(response.questionId)) {
+      return { success: false, error: `Missing question ID in response ${i + 1}` };
     }
 
-    // Validate courseContentRating
-    if (!response.courseContentRating) {
-      return { success: false, error: `Missing course content rating in response ${i + 1}` };
-    }
-    if (!validRatings.includes(response.courseContentRating)) {
-      return { success: false, error: `Invalid course content rating value in response ${i + 1}` };
+    // Validate rating
+    if (typeof response.rating !== "number" || response.rating < 1 || response.rating > 3) {
+      return { success: false, error: `Invalid rating value in response ${i + 1}` };
     }
   }
 
@@ -912,23 +906,12 @@ export async function submitFeedback(
         .returning();
 
       // Step 3: Insert all feedback responses
-      const responseRecords = [];
-      for (const response of responses) {
-        // Lecture quality response
-        responseRecords.push({
-          submissionId: submission.id,
-          courseId: response.courseId,
-          questionType: "lecture_quality" as QuestionType,
-          rating: response.lectureQualityRating,
-        });
-        // Course content response
-        responseRecords.push({
-          submissionId: submission.id,
-          courseId: response.courseId,
-          questionType: "course_content" as QuestionType,
-          rating: response.courseContentRating,
-        });
-      }
+      const responseRecords = responses.map(response => ({
+        submissionId: submission.id,
+        courseId: response.courseId,
+        questionId: response.questionId,
+        rating: response.rating,
+      }));
 
       await tx.insert(feedbackResponses).values(responseRecords);
     });

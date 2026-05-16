@@ -41,11 +41,22 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
 
     const formData = new FormData(e.currentTarget);
 
-    const responses = courses.map((course) => ({
-      courseId: course.id,
-      lectureQualityRating: formData.get(`lecture_quality_${course.id}`) as Rating,
-      courseContentRating: formData.get(`course_content_${course.id}`) as Rating,
-    }));
+    const responses: { courseId: string; questionId: string; rating: number }[] = [];
+
+    for (const course of courses) {
+      for (const question of course.questions) {
+        const ratingStr = formData.get(`rating_${course.id}_${question.id}`) as string;
+        let numericRating = 2; // Default average
+        if (ratingStr === "good") numericRating = 3;
+        if (ratingStr === "bad") numericRating = 1;
+
+        responses.push({
+          courseId: course.id,
+          questionId: question.id,
+          rating: numericRating,
+        });
+      }
+    }
 
     // Call the server action
     const result = await submitFeedback(joinCode, accessCode, responses);
