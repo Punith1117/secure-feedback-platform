@@ -33,17 +33,17 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
     <>
       {/* Small Floating QR Code */}
       <div 
-        className="fixed bottom-6 right-6 z-40 cursor-pointer rounded-xl border border-slate-200 bg-white p-3 shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+        className="fixed bottom-2 right-2 sm:bottom-6 sm:right-6 z-40 cursor-pointer rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-md p-1.5 sm:p-3 shadow-sm transition-all hover:scale-105 hover:shadow-md"
         onClick={() => setIsModalOpen(true)}
         title="Click to enlarge QR code"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <img 
             src={qrCodeDataUrl} 
             alt={`QR code for ${instanceTitle} feedback`}
-            className="h-16 w-16"
+            className="h-12 w-12 sm:h-16 sm:w-16"
           />
-          <div className="flex flex-col">
+          <div className="hidden sm:flex flex-col">
             <p className="text-xs font-semibold text-slate-800">Join Code</p>
             <p className="text-sm font-mono font-bold text-slate-900">{joinCode}</p>
           </div>
