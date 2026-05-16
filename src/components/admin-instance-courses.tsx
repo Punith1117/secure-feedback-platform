@@ -123,7 +123,7 @@ export default function AdminInstanceCourses({
   }
 
 return (
-    <div className="space-y-8 max-w-3xl px-4 py-8">
+    <div className="space-y-8 h-full">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6">
           <p className="text-sm text-slate-500">Admin instance</p>
@@ -238,12 +238,12 @@ return (
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">Courses</h2>
             <p className="text-sm text-slate-600">All courses for this feedback instance.</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 w-fit">
             {courses.length} {courses.length === 1 ? "course" : "courses"}
           </span>
         </div>
@@ -256,10 +256,10 @@ return (
           <ul className="space-y-3">
             {courses.map((course) => (
               <li key={course.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex flex-col">
-                    <p className="font-medium text-slate-900">{course.title}</p>
-                    <div className="mt-1 flex gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex flex-col flex-1">
+                    <p className="font-medium text-slate-900 break-words">{course.title}</p>
+                    <div className="mt-1 flex flex-wrap gap-2">
                       <span className="w-fit rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                         {course.templateName}
                       </span>

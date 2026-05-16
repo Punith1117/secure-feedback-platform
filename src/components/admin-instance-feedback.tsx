@@ -211,9 +211,9 @@ export default function AdminInstanceFeedback({
   );
 
   return (
-    <div className="space-y-6 px-4 py-8">
+    <div className="space-y-6 h-full w-full">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-start justify-between">
+        <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">
               Feedback Results

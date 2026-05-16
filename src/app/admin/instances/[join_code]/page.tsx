@@ -68,7 +68,7 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
 
   return (
     <div className="min-h-screen bg-slate-50 p-4">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 py-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 py-8">
         <AdminInstanceFeedback
           instanceTitle={instanceResult.instance.title}
           joinCode={instanceResult.instance.joinCode}
@@ -80,22 +80,26 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
           instanceTitle={instanceResult.instance.title}
         />
         
-        <div className="flex gap-6">
-          <AdminInstanceCourses
-            instanceId={instanceResult.instance.id}
-            instanceTitle={instanceResult.instance.title}
-            joinCode={instanceResult.instance.joinCode}
-            initialCourses={courses}
-            courseOfferings={courseOfferings}
-            facultyList={facultyList}
-          />
-          <AdminInstanceAccessCodes
-            instanceId={instanceResult.instance.id}
-            initialAccessCodes={accessCodes}
-            adminUsername={session.user.displayUsername || session.user.username || session.user.name || "Admin"}
-            joinCode={instanceResult.instance.joinCode}
-            instanceTitle={instanceResult.instance.title}
-          />
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 w-full lg:w-1/2">
+            <AdminInstanceCourses
+              instanceId={instanceResult.instance.id}
+              instanceTitle={instanceResult.instance.title}
+              joinCode={instanceResult.instance.joinCode}
+              initialCourses={courses}
+              courseOfferings={courseOfferings}
+              facultyList={facultyList}
+            />
+          </div>
+          <div className="flex-1 w-full lg:w-1/2">
+            <AdminInstanceAccessCodes
+              instanceId={instanceResult.instance.id}
+              initialAccessCodes={accessCodes}
+              adminUsername={session.user.displayUsername || session.user.username || session.user.name || "Admin"}
+              joinCode={instanceResult.instance.joinCode}
+              instanceTitle={instanceResult.instance.title}
+            />
+          </div>
         </div>
       </div>
     </div>

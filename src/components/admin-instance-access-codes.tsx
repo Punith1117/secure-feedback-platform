@@ -75,11 +75,24 @@ export default function AdminInstanceAccessCodes({
     };
   }, [joinCode]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const codesPerPage = 10;
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Reset to first page when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
+
   const filteredCodes = accessCodes.filter((code) => {
-    if (filter === "available") return !code.used;
-    if (filter === "used") return code.used;
-    return true;
+    const matchesFilter = filter === "all" || (filter === "available" ? !code.used : code.used);
+    const matchesSearch = code.code.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredCodes.length / codesPerPage);
+  const startIndex = (currentPage - 1) * codesPerPage;
+  const paginatedCodes = filteredCodes.slice(startIndex, startIndex + codesPerPage);
 
   const availableCount = accessCodes.filter((c) => !c.used).length;
   const usedCount = accessCodes.filter((c) => c.used).length;
@@ -133,11 +146,11 @@ export default function AdminInstanceAccessCodes({
         pdf.setFontSize(12);
         pdf.text('No available access codes', 105, 140, { align: 'center' });
       } else {
-        // Simple pagination: 2 columns, 14 rows per page = 28 codes per page
-        const codesPerPage = 24;
-        const totalPages = Math.ceil(availableCodes.length / codesPerPage);
+        // Simple pagination for PDF: 2 columns, 14 rows per page = 28 codes per page
+        const codesPerPagePDF = 24;
+        const totalPagesPDF = Math.ceil(availableCodes.length / codesPerPagePDF);
         
-        for (let page = 0; page < totalPages; page++) {
+        for (let page = 0; page < totalPagesPDF; page++) {
           if (page > 0) {
             pdf.addPage();
             // Add page header
@@ -147,9 +160,9 @@ export default function AdminInstanceAccessCodes({
             pdf.text('Available Access Codes (continued)', 105, 30, { align: 'center' });
           }
           
-          const startIndex = page * codesPerPage;
-          const endIndex = Math.min(startIndex + codesPerPage, availableCodes.length);
-          const pageCodes = availableCodes.slice(startIndex, endIndex);
+          const startIndexPDF = page * codesPerPagePDF;
+          const endIndexPDF = Math.min(startIndexPDF + codesPerPagePDF, availableCodes.length);
+          const pageCodes = availableCodes.slice(startIndexPDF, endIndexPDF);
           
           // Draw codes in 2-column grid
           const startY = page === 0 ? 120 : 50;
@@ -170,7 +183,7 @@ export default function AdminInstanceAccessCodes({
             
             // Add code number and value
             pdf.setFontSize(10);
-            pdf.text(`#${startIndex + index + 1}`, x, y - 2);
+            pdf.text(`#${startIndexPDF + index + 1}`, x, y - 2);
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'bold');
             pdf.text(code.code, x + 15, y - 2);
@@ -187,7 +200,7 @@ export default function AdminInstanceAccessCodes({
 
   return (
     <>
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-full flex flex-col">
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Access Codes</h2>
@@ -203,79 +216,119 @@ export default function AdminInstanceAccessCodes({
         </div>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setFilter("all")}
-          className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
-            filter === "all"
-              ? "bg-slate-900 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          All
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilter("available")}
-          className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
-            filter === "available"
-              ? "bg-emerald-600 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          {availableCount} Available
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilter("used")}
-          className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
-            filter === "used"
-              ? "bg-slate-600 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          {usedCount} Used
-        </button>
+      <div className="mb-4 space-y-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search codes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="text-gray-800 w-full rounded-2xl border border-slate-200 bg-slate-50 px-10 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          <svg className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+              filter === "all"
+                ? "bg-slate-900 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("available")}
+            className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+              filter === "available"
+                ? "bg-emerald-600 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            {availableCount} Available
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("used")}
+            className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+              filter === "used"
+                ? "bg-slate-600 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            {usedCount} Used
+          </button>
+        </div>
       </div>
 
-      {filteredCodes.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
-          No access codes found.
-        </div>
-      ) : (
-        <div className="max-h-120 space-y-2 overflow-y-auto">
-          {filteredCodes.map((code) => (
-            <div
-              key={code.id}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <code className="font-mono text-sm font-medium text-slate-900">{code.code}</code>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      code.used
-                        ? "bg-slate-200 text-slate-600"
-                        : "bg-emerald-100 text-emerald-700"
-                    }`}
-                  >
-                    {code.used ? "Used" : "Available"}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  {code.used ? `Used: ${formatDate(code.usedAt)}` : `Created: ${formatDate(code.createdAt)}`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCopy(code.id, code.code)}
-                className="shrink-0 rounded-xl bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-200"
+      <div className="flex-1 space-y-2 min-h-[400px]">
+        {paginatedCodes.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600 flex items-center justify-center h-full">
+            {searchTerm ? "No codes match your search." : "No access codes found."}
+          </div>
+        ) : (
+          <>
+            {paginatedCodes.map((code) => (
+              <div
+                key={code.id}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
-                {copiedId === code.id ? "Copied!" : "Copy"}
-              </button>
-            </div>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="font-mono text-sm font-medium text-slate-900">{code.code}</code>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        code.used
+                          ? "bg-slate-200 text-slate-600"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {code.used ? "Used" : "Available"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {code.used ? `Used: ${formatDate(code.usedAt)}` : `Created: ${formatDate(code.createdAt)}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(code.id, code.code)}
+                  className="shrink-0 rounded-xl bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-200"
+                >
+                  {copiedId === code.id ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="text-sm font-medium text-slate-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
         </div>
       )}
     </section>

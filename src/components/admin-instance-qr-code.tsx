@@ -57,7 +57,7 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
           onClick={() => setIsModalOpen(false)}
         >
           <div 
-            className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-8 shadow-2xl"
+            className="max-h-[90vh] max-w-4xl w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -81,7 +81,7 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
                 <img 
                   src={qrCodeDataUrl} 
                   alt={`QR code for ${instanceTitle} feedback`}
-                  className="h-96 w-96"
+                  className="w-full max-w-[24rem] h-auto aspect-square"
                 />
               </div>
 
