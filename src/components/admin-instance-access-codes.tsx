@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { StudentAccessCode } from "@/lib/db/schema";
 import jsPDF from "jspdf";
 import { Realtime } from "ably";
+import { getNewAccessCode } from "@/app/actions";
 
 type AdminInstanceAccessCodesProps = {
   instanceId: string;
@@ -11,6 +12,7 @@ type AdminInstanceAccessCodesProps = {
   adminUsername?: string;
   joinCode?: string;
   instanceTitle?: string;
+  userId: string
 };
 
 function formatDate(date: Date | null | undefined): string {
@@ -44,6 +46,7 @@ export default function AdminInstanceAccessCodes({
   adminUsername = "Admin",
   joinCode = "N/A",
   instanceTitle = "Feedback Instance",
+  userId
 }: AdminInstanceAccessCodesProps) {
   const [accessCodes, setAccessCodes] = useState<StudentAccessCode[]>(initialAccessCodes);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -198,6 +201,24 @@ export default function AdminInstanceAccessCodes({
     }
   };
 
+  async function handleGenerateAccessCode() {
+    try {
+      const result = await getNewAccessCode(instanceId, userId);
+
+      if (!result.success) {
+        alert(result.error);
+        return;
+      }
+
+      setAccessCodes((prev) => [
+        ...prev,
+        result.accessCode
+      ]);
+    } catch (e) {
+      console.error("New access code generation failed")
+    }
+  }
+
   return (
     <>
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-full flex flex-col">
@@ -263,6 +284,13 @@ export default function AdminInstanceAccessCodes({
             }`}
           >
             {usedCount} Used
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerateAccessCode}
+            className={`text-black cursor-pointer hover:bg-slate-100 p-2 rounded-xl`}
+          >
+            Generate new
           </button>
         </div>
       </div>

@@ -406,6 +406,58 @@ export async function updateInstanceTitle(
   }
 }
 
+export async function getNewAccessCode(
+  instanceId: string,
+  userId: string
+): Promise<{success: true, accessCode: StudentAccessCode} | {success: false, error: string}> {
+  if (!isValidUuid(instanceId)) {
+    return {
+      success: false,
+      error: "Valid feedback instance ID is required",
+    };
+  }
+
+  if (!userId?.trim()) {
+    return {
+      success: false,
+      error: "User ID is required",
+    };
+  }
+
+  const ownership = await validateInstanceOwnership(
+    instanceId,
+    userId
+  );
+
+  if (!ownership.success) {
+    return ownership;
+  }
+
+  try {
+    const code = nanoid(8);
+
+    const [accessCode] = await db
+      .insert(studentAccessCodes)
+      .values({
+        instanceId,
+        code,
+      })
+      .returning();
+
+    return {
+      success: true,
+      accessCode,
+    };
+  } catch (error) {
+    console.error("Failed to create access code:", error);
+
+    return {
+      success: false,
+      error: "Failed to create access code",
+    };
+  }
+}
+
 export async function toggleInstanceStatus(
   instanceId: string,
   isActive: boolean,
