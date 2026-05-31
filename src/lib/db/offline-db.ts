@@ -12,7 +12,7 @@ export interface PendingFeedback {
     rating: number;
   }[];
 
-  status: "pending" | "synced";
+  status: "pending" | "synced" | "invalid";
 
   createdAt: number;
 }
