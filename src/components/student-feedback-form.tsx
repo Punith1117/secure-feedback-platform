@@ -95,35 +95,47 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
         switch (result.error) {
           case FeedbackErrorCode.ACCESS_CODE_ALREADY_USED:
             setError("Access code is already used. Try a different one.")
+            await db.feedbackQueue.update(queueId, {
+              status: "invalid",
+            });
             break;
 
           case FeedbackErrorCode.INVALID_ACCESS_CODE:
             setError("Invalid access code");
+            await db.feedbackQueue.update(queueId, {
+              status: "invalid",
+            });
             break;
 
           case FeedbackErrorCode.MISSING_JOIN_CODE:
             setError("Join code is missing");
+            await db.feedbackQueue.update(queueId, {
+              status: "invalid",
+            });
             break;
 
           case FeedbackErrorCode.MISSING_RESPONSES:
             setError("Please fill all responses");
+            await db.feedbackQueue.update(queueId, {
+              status: "invalid",
+            });
             break;
 
           case FeedbackErrorCode.INACTIVE_INSTANCE:
-            setError("This feedback is inactive. Contact the owner for more details.");
+            setError("This feedback is inactive. Response will be synced when active again. Contact the owner for more details.");
             break;
 
           case FeedbackErrorCode.INTERNAL_ERROR:
-            setError("Server error. Try again later.");
+            setError("Server error. Your response will be synced later.");
             break;
 
           default: {
-            setError("Unknown error");
+            setError("Unknown error. Your response will be synced later later.");
           }
         }
       }
     } catch (err) {
-      setError("Error occurred while submitting form");
+      setError("Error occurred while submitting form. Your response will be synced later.");
     }
 
     setLoading(false);
