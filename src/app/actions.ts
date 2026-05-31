@@ -15,6 +15,7 @@ import {
 } from "@/lib/db/schema";
 import type { Course, CourseOffering, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats, Template, Faculty } from "@/lib/db/schema";
 import { Realtime } from "ably";
+import { FeedbackErrorCode, SubmitFeedbackResult } from "@/lib/feedback-submit-error-types";
 
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
 
@@ -820,20 +821,20 @@ export async function submitFeedback(
   joinCode: string,
   accessCode: string,
   responses: FeedbackResponseInput[],
-): Promise<{ success: true } | { success: false; error: string }> {
+): Promise<SubmitFeedbackResult> {
   // Validate joinCode
   if (!joinCode?.trim()) {
-    return { success: false, error: "Join code is required" };
+    return { success: false, error: FeedbackErrorCode.MISSING_JOIN_CODE };
   }
 
   // Validate accessCode
   if (!accessCode?.trim()) {
-    return { success: false, error: "Access code is required" };
+    return { success: false, error: FeedbackErrorCode.MISSING_ACCESS_CODE };
   }
 
   // Validate responses
   if (!responses || !Array.isArray(responses) || responses.length === 0) {
-    return { success: false, error: "At least one response is required" };
+    return { success: false, error: FeedbackErrorCode.MISSING_RESPONSES };
   }
 
   // Valid rating values
@@ -850,15 +851,15 @@ export async function submitFeedback(
     instance = foundInstance;
   } catch (error) {
     console.error("Failed to query feedback instance:", error);
-    return { success: false, error: "Feedback instance not found" };
+    return { success: false, error: FeedbackErrorCode.INVALID_JOIN_CODE };
   }
 
   if (!instance) {
-    return { success: false, error: "Feedback instance not found" };
+    return { success: false, error: FeedbackErrorCode.INVALID_JOIN_CODE };
   }
 
   if (!instance.isActive) {
-    return { success: false, error: "This feedback instance is currently inactive and not accepting submissions" };
+    return { success: false, error: FeedbackErrorCode.INACTIVE_INSTANCE };
   }
 
   // Find the access code for this instance
@@ -877,16 +878,16 @@ export async function submitFeedback(
     accessCodeRecord = foundAccessCode;
   } catch (error) {
     console.error("Failed to query access code:", error);
-    return { success: false, error: "Invalid access code for this feedback instance" };
+    return { success: false, error: FeedbackErrorCode.INVALID_ACCESS_CODE };
   }
 
   if (!accessCodeRecord) {
-    return { success: false, error: "Invalid access code for this feedback instance" };
+    return { success: false, error: FeedbackErrorCode.INVALID_ACCESS_CODE };
   }
 
   // Check if access code has already been used
   if (accessCodeRecord.used) {
-    return { success: false, error: "This access code has already been used" };
+    return { success: false, error: FeedbackErrorCode.ACCESS_CODE_ALREADY_USED };
   }
 
   // Validate each response
@@ -900,7 +901,7 @@ export async function submitFeedback(
     instanceCourses.forEach((c) => instanceCourseIds.add(c.id));
   } catch (error) {
     console.error("Failed to fetch instance courses:", error);
-    return { success: false, error: "Failed to fetch courses for validation" };
+    return { success: false, error: FeedbackErrorCode.COURSE_NOT_FOUND };
   }
 
   // Find valid questions for the courses (optional extra validation could be added, but we assume questionId is valid for the instance)
@@ -909,22 +910,22 @@ export async function submitFeedback(
 
     // Validate courseId is provided
     if (!response.courseId || !isValidUuid(response.courseId)) {
-      return { success: false, error: `Missing course ID in response ${i + 1}` };
+      return { success: false, error: FeedbackErrorCode.INVALID_RESPONSE, message: `Missing course ID in response ${i + 1}` };
     }
 
     // Validate course belongs to this instance
     if (!instanceCourseIds.has(response.courseId)) {
-      return { success: false, error: `Course not found in this feedback instance` };
+      return { success: false, error: FeedbackErrorCode.COURSE_NOT_FOUND, message: `Course not found in this feedback instance` };
     }
 
     // Validate questionId is provided
     if (!response.questionId || !isValidUuid(response.questionId)) {
-      return { success: false, error: `Missing question ID in response ${i + 1}` };
+      return { success: false, error: FeedbackErrorCode.INVALID_RESPONSE, message: `Missing question ID in response ${i + 1}` };
     }
 
     // Validate rating
     if (typeof response.rating !== "number" || response.rating < 1 || response.rating > 3) {
-      return { success: false, error: `Invalid rating value in response ${i + 1}` };
+      return { success: false, error: FeedbackErrorCode.INVALID_RESPONSE, message: `Invalid rating value in response ${i + 1}` };
     }
   }
 
@@ -987,6 +988,6 @@ export async function submitFeedback(
     return { success: true };
   } catch (error) {
     console.error("Failed to submit feedback:", error);
-    return { success: false, error: "Failed to submit feedback" };
+    return { success: false, error: FeedbackErrorCode.INTERNAL_ERROR, message: "Failed to submit feedback" };
   }
 }

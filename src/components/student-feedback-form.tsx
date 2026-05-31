@@ -6,6 +6,7 @@ import { useState } from "react";
 
 type Rating = "good" | "average" | "bad";
 import { db } from "@/lib/db/offline-db";
+import { FeedbackErrorCode } from "@/lib/feedback-submit-error-types";
 interface StudentFeedbackFormProps {
   courses: {
     id: string;
@@ -91,7 +92,35 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
 
         setSuccess(true);
       } else {
-        setError(result.error);
+        switch (result.error) {
+          case FeedbackErrorCode.ACCESS_CODE_ALREADY_USED:
+            setError("Access code is already used. Try a different one.")
+            break;
+
+          case FeedbackErrorCode.INVALID_ACCESS_CODE:
+            setError("Invalid access code");
+            break;
+
+          case FeedbackErrorCode.MISSING_JOIN_CODE:
+            setError("Join code is missing");
+            break;
+
+          case FeedbackErrorCode.MISSING_RESPONSES:
+            setError("Please fill all responses");
+            break;
+
+          case FeedbackErrorCode.INACTIVE_INSTANCE:
+            setError("This feedback is inactive. Contact the owner for more details.");
+            break;
+
+          case FeedbackErrorCode.INTERNAL_ERROR:
+            setError("Server error. Try again later.");
+            break;
+
+          default: {
+            setError("Unknown error");
+          }
+        }
       }
     } catch (err) {
       setError("Error occurred while submitting form");
