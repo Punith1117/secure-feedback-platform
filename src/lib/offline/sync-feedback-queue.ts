@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/offline-db";
 import { submitFeedback } from "@/app/actions";
 import { FeedbackErrorCode } from "@/lib/feedback-submit-error-types";
+import { toast } from "sonner";
 
 export async function syncFeedbackQueue() {
   if (!navigator.onLine) return;
@@ -9,6 +10,11 @@ export async function syncFeedbackQueue() {
     .where("status")
     .equals("pending")
     .toArray();
+
+  if (pendingItems.length > 0) toast.loading("Syncing feedback...");
+
+	let synced = 0;
+	let failed = 0;
 
   for (const item of pendingItems) {
     try {
@@ -22,6 +28,7 @@ export async function syncFeedbackQueue() {
         await db.feedbackQueue.update(item.id!, {
           status: "synced",
         });
+				synced++;
         continue;
       }
 
@@ -43,9 +50,22 @@ export async function syncFeedbackQueue() {
             status: "invalid",
           });
       }
+			failed++
     } catch (err) {
+			failed++;
       // network failure -> keep pending
       continue;
     }
   }
+
+	toast.dismiss()
+
+	if (synced > 0 && failed === 0) {
+		toast.success(`${synced} feedback(s) synced`);
+	} else if (synced > 0 && failed > 0) {
+		toast.success(`${synced} synced`);
+		toast.error(`${failed} feedback(s) failed`);
+	} else if (failed > 0) {
+		toast.error(`${failed} feedback(s) failed`)
+	}
 }
