@@ -141,11 +141,6 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
-          {error}
-        </div>
-      )}
 
       {courses.map((course) => (
         <div key={course.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -176,6 +171,12 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
           </div>
         </div>
       ))}
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          {error}
+        </div>
+      )}
 
       <button
         type="submit"
