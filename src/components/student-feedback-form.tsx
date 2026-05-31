@@ -5,7 +5,7 @@ import type { Course } from "@/lib/db/schema";
 import { useState } from "react";
 
 type Rating = "good" | "average" | "bad";
-
+import { db } from "@/lib/db/offline-db";
 interface StudentFeedbackFormProps {
   courses: {
     id: string;
@@ -58,13 +58,43 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
       }
     }
 
-    // Call the server action
-    const result = await submitFeedback(joinCode, accessCode, responses);
+    // 1. Always store first (source of truth)
+    const queueId = await db.feedbackQueue.add({
+      joinCode,
+      accessCode,
+      responses,
+      status: "pending",
+      createdAt: Date.now(),
+    });
 
-    if (result.success) {
-      setSuccess(true);
-    } else {
-      setError(result.error);
+    // 2. If offline -> stop here (do NOT mark synced)
+    if (!navigator.onLine) {
+      setLoading(false);
+      setError(
+        "You are offline. Your response is saved and will sync automatically."
+      );
+      return;
+    }
+
+    // 3. Try server sync
+    try {
+      const result = await submitFeedback(
+        joinCode,
+        accessCode,
+        responses
+      );
+
+      if (result.success) {
+        await db.feedbackQueue.update(queueId, {
+          status: "synced",
+        });
+
+        setSuccess(true);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError("Error occurred while submitting form");
     }
 
     setLoading(false);
