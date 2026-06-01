@@ -16,6 +16,7 @@ import {
 import type { Course, CourseOffering, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats, Template, Faculty } from "@/lib/db/schema";
 import { Realtime } from "ably";
 import { FeedbackErrorCode, SubmitFeedbackResult } from "@/types/feedback-submit-error-types";
+import { DeleteErrorCode, type DeleteResult } from "@/types/delete-error-types";
 
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
 
@@ -989,5 +990,113 @@ export async function submitFeedback(
   } catch (error) {
     console.error("Failed to submit feedback:", error);
     return { success: false, error: FeedbackErrorCode.INTERNAL_ERROR, message: "Failed to submit feedback" };
+  }
+}
+
+export async function deleteFaculty(
+  facultyId: string,
+  userId: string
+): Promise<DeleteResult> {
+  try {
+    if (!facultyId?.trim()) {
+      return {
+        success: false,
+        error: DeleteErrorCode.NOT_FOUND,
+        message: "Faculty id is required",
+      };
+    }
+
+    // Ensure faculty belongs to user (security boundary)
+    const existing = await db.query.faculty.findFirst({
+      where: (f, { eq, and }) =>
+        and(eq(f.id, facultyId), eq(f.userId, userId)),
+    });
+
+    if (!existing) {
+      return {
+        success: false,
+        error: DeleteErrorCode.NOT_FOUND,
+      };
+    }
+
+    try {
+      await db.delete(faculty).where(eq(faculty.id, facultyId));
+
+      return { success: true };
+    } catch (err: any) {
+      // PostgreSQL foreign key violation (RESTRICT)
+      if (err?.cause?.code === "23503") {
+        return {
+          success: false,
+          error: DeleteErrorCode.HAS_DEPENDENCIES,
+          message: "Faculty is linked to courses. Remove the links first.",
+        };
+      }
+
+      throw err;
+    }
+  } catch (err) {
+    console.error("deleteFaculty error:", err);
+
+    return {
+      success: false,
+      error: DeleteErrorCode.INTERNAL_ERROR,
+    };
+  }
+}
+
+export async function deleteCourseOffering(
+  courseOfferingId: string,
+  userId: string
+): Promise<DeleteResult> {
+  try {
+    if (!courseOfferingId?.trim()) {
+      return {
+        success: false,
+        error: DeleteErrorCode.NOT_FOUND,
+        message: "Course offering id is required",
+      };
+    }
+
+    // ownership check
+    const existing = await db.query.courseOfferings.findFirst({
+      where: (c, { eq, and }) =>
+        and(eq(c.id, courseOfferingId), eq(c.userId, userId)),
+    });
+
+    if (!existing) {
+      return {
+        success: false,
+        error: DeleteErrorCode.NOT_FOUND,
+      };
+    }
+
+    try {
+      await db
+        .delete(courseOfferings)
+        .where(eq(courseOfferings.id, courseOfferingId));
+
+      return { success: true };
+    } catch (err: any) {
+      // FK restriction (courses table references course_offerings)
+      if (err?.cause?.code === "23503") {
+        console.log("here")
+        console.log("here")
+        return {
+          success: false,
+          error: DeleteErrorCode.HAS_DEPENDENCIES,
+          message: "Course offering is used in active feedback instances. Remove the courses first.",
+        };
+      }
+
+      throw err;
+    }
+  } catch (err) {
+    console.error("deleteCourseOffering error:", err);
+
+    return {
+      success: false,
+      error: DeleteErrorCode.INTERNAL_ERROR,
+    };
   }
 }
