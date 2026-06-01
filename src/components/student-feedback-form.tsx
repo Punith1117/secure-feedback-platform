@@ -6,7 +6,7 @@ import { useState } from "react";
 
 type Rating = "good" | "average" | "bad";
 import { db } from "@/lib/db/offline-db";
-import { FeedbackErrorCode } from "@/lib/feedback-submit-error-types";
+import { FeedbackErrorCode } from "@/types/feedback-submit-error-types";
 interface StudentFeedbackFormProps {
   courses: {
     id: string;

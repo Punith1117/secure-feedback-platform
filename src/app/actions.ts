@@ -15,7 +15,7 @@ import {
 } from "@/lib/db/schema";
 import type { Course, CourseOffering, FeedbackInstance, StudentAccessCode, FeedbackInstanceWithStats, Template, Faculty } from "@/lib/db/schema";
 import { Realtime } from "ably";
-import { FeedbackErrorCode, SubmitFeedbackResult } from "@/lib/feedback-submit-error-types";
+import { FeedbackErrorCode, SubmitFeedbackResult } from "@/types/feedback-submit-error-types";
 
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
 

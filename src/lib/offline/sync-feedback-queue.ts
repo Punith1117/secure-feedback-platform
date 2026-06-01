@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/offline-db";
 import { submitFeedback } from "@/app/actions";
-import { FeedbackErrorCode } from "@/lib/feedback-submit-error-types";
+import { FeedbackErrorCode } from "@/types/feedback-submit-error-types";
 import { toast } from "sonner";
 
 export async function syncFeedbackQueue() {
