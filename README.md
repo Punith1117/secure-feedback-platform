@@ -69,6 +69,85 @@ The database schema is designed for normalization and referential integrity:
 *   **`feedback_submissions`**: Transactional records linking an access code usage to a specific instance.
 *   **`feedback_responses`**: Normalized storage for individual question ratings.
 
+## Offline-First Submission & Sync System
+
+The platform implements an **offline-first feedback submission pipeline** to ensure that student responses are never lost due to network instability.
+
+When a user submits feedback, the system does not immediately rely on network availability. Instead, responses are first persisted locally and later synchronized with the server.
+
+### Key Design Principles
+
+- **Local-first writes**: Every feedback submission is immediately stored in IndexedDB using Dexie.
+- **Eventual consistency**: Server synchronization happens asynchronously when connectivity is restored.
+- **Failure isolation**: Network or server errors do not block local submission.
+- **Explicit state tracking**: Each queued submission has a lifecycle state (`pending`, `synced`, `invalid`).
+
+---
+
+### Offline Queue Architecture
+
+```mermaid
+graph TD
+    A[User submits feedback] --> B[Store in IndexedDB queue]
+    B --> C{Online?}
+    C -- No --> D[Wait in pending state]
+    C -- Yes --> E[Sync engine triggers]
+    E --> F[submitFeedback API]
+    F --> G{Success?}
+    G -- Yes --> H[Mark as synced]
+    G -- No --> I{Retryable error?}
+    I -- Yes --> D
+    I -- No --> J[Mark as invalid]
+```
+
+---
+
+### Sync Triggers
+
+The sync engine runs automatically on:
+
+- Application load  
+- Browser `online` event  
+- Window focus  
+- Tab visibility change  
+
+This ensures that queued feedback is eventually delivered without user intervention.
+
+---
+
+### Error Handling Strategy
+
+Server responses are normalized into structured error codes (`FeedbackErrorCode`) and handled as follows:
+
+- **Retryable errors** (`INTERNAL_ERROR`, `INACTIVE_INSTANCE`)
+  - Keep item in `pending` queue for future retry
+
+- **Non-retryable errors**
+  - Mark as `invalid` to prevent repeated failed attempts
+
+- **Success**
+  - Mark as `synced` and remove from retry loop
+
+---
+
+### Reliability Guarantees
+
+This system ensures:
+
+- No feedback loss during offline usage
+- No duplicate submissions via unique access code constraint
+- Automatic recovery without user involvement
+- Consistent eventual sync behavior across sessions
+
+---
+
+### UX Behavior
+
+- Users can submit feedback without internet connectivity
+- A local confirmation is shown immediately
+- Sync status is handled silently in the background
+- Toast notifications summarize sync results (success/failure counts)
+
 ### Security Design
 1.  **Access Control**: Administrative routes are protected via server-side session validation.
 2.  **Anonymization**: Submissions are decoupled from student identities. While an access code proves authorization, it is not linked back to a user profile in the database.
