@@ -1,4 +1,5 @@
 import type { CourseOffering } from "@/lib/db/schema";
+import { DeleteCourseOfferingButton } from "./delete-course-offering-button";
 
 interface CourseOfferingsSidebarProps {
   offerings: (CourseOffering & { templateName: string })[];
@@ -35,6 +36,7 @@ export default function CourseOfferingsSidebar({ offerings }: CourseOfferingsSid
                     <span className="text-[10px] text-gray-400 group-hover:text-blue-400 transition-colors">
                       {new Date(offering.createdAt).toLocaleDateString()}
                     </span>
+                    {<DeleteCourseOfferingButton courseOfferingId={offering.id} userId={offering.userId} />}
                   </div>
                 </div>
               </li>

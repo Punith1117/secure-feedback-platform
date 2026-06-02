@@ -1,4 +1,5 @@
 import type { Faculty } from "@/lib/db/schema";
+import DeleteFacultyButton from "./delete-faculty-button";
 
 interface FacultySidebarProps {
   facultyList: Faculty[];
@@ -32,6 +33,7 @@ export default function FacultySidebar({ facultyList }: FacultySidebarProps) {
                     <span className="text-[10px] text-gray-400 group-hover:text-blue-400 transition-colors">
                       Added {new Date(faculty.createdAt).toLocaleDateString()}
                     </span>
+                    <DeleteFacultyButton facultyId={faculty.id} userId={faculty.userId} />
                   </div>
                 </div>
               </li>
