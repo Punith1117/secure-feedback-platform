@@ -9,7 +9,14 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "test": "dotenv -e .env.test vitest",
+    "test:run": "dotenv -e .env.test vitest run",
+
+    "db:test:push": "dotenv -e .env.test drizzle-kit push",
+    "db:test:migrate": "dotenv -e .env.test drizzle-kit migrate",
+
+    "db:dev:studio": "dotenv -e .env drizzle-kit studio",
+    "db:test:studio": "dotenv -e .env.test drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -38,10 +45,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }
