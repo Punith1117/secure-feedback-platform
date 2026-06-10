@@ -1,6 +1,7 @@
 import { beforeEach } from "vitest";
-import { db } from "../../src/lib/db/index";
+import { db } from "@/lib/db/index";
 import { sql } from "drizzle-orm";
+import { seedUsers } from "../fixtures/user.fixture";
 
 beforeEach(async () => {
   await db.execute(sql`
@@ -21,4 +22,6 @@ beforeEach(async () => {
       "user"
     RESTART IDENTITY CASCADE;
   `);
+
+  await seedUsers()
 });

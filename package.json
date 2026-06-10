@@ -11,10 +11,8 @@
     "db:migrate": "drizzle-kit migrate",
     "test": "dotenv -e .env.test vitest",
     "test:run": "dotenv -e .env.test vitest run",
-
     "db:test:push": "dotenv -e .env.test drizzle-kit push",
     "db:test:migrate": "dotenv -e .env.test drizzle-kit migrate",
-
     "db:dev:studio": "dotenv -e .env drizzle-kit studio",
     "db:test:studio": "dotenv -e .env.test drizzle-kit studio"
   },
@@ -51,6 +49,7 @@
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.8"
   }
 }
