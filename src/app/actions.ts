@@ -316,13 +316,19 @@ export async function createFaculty(
       success: true,
       faculty: createdFaculty,
     };
-  } catch (error) {
-    console.error("Failed to create faculty:", error);
+  } catch (error: any) {
+    if (error?.cause?.code === "23505") {
+      return {
+        success: false,
+        error: "Faculty already exists",
+      };
+    }
+
+    console.error(error);
 
     return {
       success: false,
-      error:
-        "Failed to create faculty. Faculty with this name may already exist.",
+      error: "Unexpected error",
     };
   }
 }
