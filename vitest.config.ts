@@ -11,5 +11,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
 
     setupFiles: ["tests/setup/db.ts"],
+
+    fileParallelism: false,
   },
 });
