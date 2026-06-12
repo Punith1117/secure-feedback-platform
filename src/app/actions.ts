@@ -1012,6 +1012,13 @@ export async function deleteFaculty(
       };
     }
 
+    if (!isValidUuid(facultyId)) {
+      return {
+        success: false,
+        error: DeleteErrorCode.NOT_FOUND,
+        message: "Invalid faculty id",
+      };
+    }
     // Ensure faculty belongs to user (security boundary)
     const existing = await db.query.faculty.findFirst({
       where: (f, { eq, and }) =>
