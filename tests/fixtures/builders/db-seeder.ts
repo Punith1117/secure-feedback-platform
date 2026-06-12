@@ -1,29 +1,32 @@
 import { db } from "@/lib/db";
-import { user, templates, questionBank, templateQuestions } from "@/lib/db/schema";
+import { templates, questionBank, templateQuestions } from "@/lib/db/schema";
+import { randomUUID } from "crypto";
 
 export async function seedBaseData() {
-  await db.insert(user).values([
-    {
-      id: "user_admin_a",
-      name: "Admin A",
-      email: "adminA@test.com",
-    },
-  ]);
+  const templateId = randomUUID();
+  const q1 = randomUUID();
+  const q2 = randomUUID();
 
   await db.insert(templates).values([
     {
-      id: "template_basic",
+      id: templateId,
       name: "Basic Template",
     },
   ]);
 
   await db.insert(questionBank).values([
-    { id: "q1", question: "Teaching quality?" },
-    { id: "q2", question: "Clarity?" },
+    { id: q1, question: "Teaching quality?" },
+    { id: q2, question: "Clarity?" },
   ]);
 
   await db.insert(templateQuestions).values([
-    { templateId: "template_basic", questionId: "q1" },
-    { templateId: "template_basic", questionId: "q2" },
+    { templateId, questionId: q1 },
+    { templateId, questionId: q2 },
   ]);
+
+  return {
+    templateId,
+    q1,
+    q2,
+  };
 }
