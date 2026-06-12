@@ -1093,8 +1093,6 @@ export async function deleteCourseOffering(
     } catch (err: any) {
       // FK restriction (courses table references course_offerings)
       if (err?.cause?.code === "23503") {
-        console.log("here")
-        console.log("here")
         return {
           success: false,
           error: DeleteErrorCode.HAS_DEPENDENCIES,
