@@ -31,6 +31,70 @@ This platform facilitates anonymous feedback collection for educational institut
 
 ---
 
+## Integration Testing Strategy
+
+The platform includes a comprehensive integration test suite built with **Vitest** and a dedicated PostgreSQL test database.
+
+The project emphasizes **integration testing of business-critical workflows**, where most production failures are likely to occur. This approach validates the interaction between Next.js Server Actions, Drizzle ORM, PostgreSQL constraints, authentication boundaries, and transactional logic under realistic conditions.
+
+### Why Integration Tests Over Unit Tests?
+
+Many core requirements of the platform depend on database behavior rather than isolated functions:
+
+* Transactional feedback submission
+* One-time access code enforcement
+* Ownership and authorization validation
+* Referential integrity across related entities
+* Aggregated reporting and analytics queries
+* Cascading and restricted delete behavior
+
+Testing these workflows against a real database provides significantly higher confidence than mocking database interactions in unit tests.
+
+### Test Architecture
+
+The test suite uses:
+
+* **Vitest** for test execution
+* **Dedicated PostgreSQL test database**
+* **Reusable fixture builders and scenario generators**
+* **Automatic database seeding and cleanup**
+* **Mocked external services (Ably Pub/Sub)**
+
+```text
+tests/
+├── fixtures/
+│   ├── base/
+│   ├── builders/
+│   └── scenarios/
+├── integration/
+│   ├── access-code.test.ts
+│   ├── course-management.test.ts
+│   ├── course-offering.test.ts
+│   ├── faculty.test.ts
+│   ├── feedback-instance.test.ts
+│   └── submit-feedback.test.ts
+└── setup/
+```
+
+### Covered Workflows
+
+The integration suite validates:
+
+* Feedback instance creation, updates, activation, and deletion
+* Access code generation and retrieval
+* Course and faculty management
+* Authorization and ownership boundaries
+* Anonymous feedback submission lifecycle
+* Transactional access code consumption
+* Aggregated reporting and analytics queries
+* Error handling for invalid or unauthorized operations
+
+### Engineering Benefits
+
+The result is a high-confidence validation layer that catches database, transaction, and authorization issues before deployment while preserving rapid development feedback cycles.
+
+---
+
 ## System Architecture
 
 The application follows a **Modular Monolith** pattern, leveraging Next.js Server Actions for secure, type-safe communication between the client and the database.
