@@ -83,9 +83,15 @@ export default function AdminInstanceAccessCodes({
   const [searchTerm, setSearchTerm] = useState("");
 
   // Reset to first page when filter or search changes
-  useEffect(() => {
+  function handleFilterChange(newFilter: typeof filter) {
+    setFilter(newFilter);
     setCurrentPage(1);
-  }, [filter, searchTerm]);
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  }
 
   const filteredCodes = accessCodes.filter((code) => {
     const matchesFilter = filter === "all" || (filter === "available" ? !code.used : code.used);
@@ -214,7 +220,7 @@ export default function AdminInstanceAccessCodes({
         ...prev,
         result.accessCode
       ]);
-    } catch (e) {
+    } catch {
       console.error("New access code generation failed")
     }
   }
@@ -243,7 +249,7 @@ export default function AdminInstanceAccessCodes({
             type="text"
             placeholder="Search codes..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="text-gray-800 w-full rounded-2xl border border-slate-200 bg-slate-50 px-10 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
           <svg className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -254,7 +260,7 @@ export default function AdminInstanceAccessCodes({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setFilter("all")}
+            onClick={() => handleFilterChange("all")}
             className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
               filter === "all"
                 ? "bg-slate-900 text-white"
@@ -265,7 +271,7 @@ export default function AdminInstanceAccessCodes({
           </button>
           <button
             type="button"
-            onClick={() => setFilter("available")}
+            onClick={() => handleFilterChange("available")}
             className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
               filter === "available"
                 ? "bg-emerald-600 text-white"
@@ -276,7 +282,7 @@ export default function AdminInstanceAccessCodes({
           </button>
           <button
             type="button"
-            onClick={() => setFilter("used")}
+            onClick={() => handleFilterChange("used")}
             className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
               filter === "used"
                 ? "bg-slate-600 text-white"

@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const STORAGE_KEY = "access_code";
 
 export default function AccessCodeInput() {
-  const [accessCode, setAccessCode] = useState<string>("");
+  const [accessCode, setAccessCode] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(STORAGE_KEY) ?? "";
+  });  
   const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setAccessCode(stored);
-    }
-  }, []);
 
   const handleSave = () => {
     localStorage.setItem(STORAGE_KEY, accessCode);
