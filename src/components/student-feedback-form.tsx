@@ -1,7 +1,6 @@
 "use client";
 
 import { submitFeedback } from "@/app/actions";
-import type { Course } from "@/lib/db/schema";
 import { useState } from "react";
 
 type Rating = "good" | "average" | "bad";
@@ -134,7 +133,7 @@ export default function StudentFeedbackForm({ courses, joinCode }: StudentFeedba
           }
         }
       }
-    } catch (err) {
+    } catch {
       setError("Error occurred while submitting form. Your response will be synced later.");
     }
 

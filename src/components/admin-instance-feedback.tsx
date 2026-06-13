@@ -7,8 +7,6 @@ import autoTable from "jspdf-autotable";
 import { toggleInstanceStatus } from "@/app/actions";
 import { useRouter } from "next/navigation";
 
-type Rating = "good" | "average" | "bad";
-
 interface CourseFeedbackWithPercentages {
   courseId: string;
   courseTitle: string;
@@ -142,13 +140,13 @@ export default function AdminInstanceFeedback({
 
           if (responsesForCourse.length === 0) return course;
 
-          let questions = [...course.questions];
+          const questions = [...course.questions];
 
           for (const r of responsesForCourse) {
             const questionIndex = questions.findIndex(q => q.questionId === r.questionId);
             if (questionIndex !== -1) {
               const q = { ...questions[questionIndex] };
-              let ratings = { ...q.ratings };
+              const ratings = { ...q.ratings };
               
               if (r.rating === 3) ratings.good++;
               else if (r.rating === 2) ratings.average++;
@@ -242,7 +240,7 @@ export default function AdminInstanceFeedback({
         margin: { left: 14, right: 14 },
       });
 
-      // @ts-ignore
+      // @ts-expect-error jsPDF types do not expose lastAutoTable finalY correctly
       currentY = doc.lastAutoTable.finalY + 15;
     });
 

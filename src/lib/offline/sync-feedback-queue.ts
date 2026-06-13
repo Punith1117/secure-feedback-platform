@@ -51,7 +51,7 @@ export async function syncFeedbackQueue() {
           });
       }
 			failed++
-    } catch (err) {
+    } catch {
 			failed++;
       // network failure -> keep pending
       continue;

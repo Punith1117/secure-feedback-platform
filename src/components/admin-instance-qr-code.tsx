@@ -38,6 +38,7 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
         title="Click to enlarge QR code"
       >
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={qrCodeDataUrl} 
             alt={`QR code for ${instanceTitle} feedback`}
@@ -78,6 +79,7 @@ export default function AdminInstanceQRCode({ joinCode, instanceTitle }: AdminIn
             <div className="flex flex-col items-center space-y-6">
               {/* Large QR Code Image */}
               <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-10 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={qrCodeDataUrl} 
                   alt={`QR code for ${instanceTitle} feedback`}

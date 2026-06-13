@@ -83,7 +83,7 @@ describe("get courses by instance id for student", () => {
 	});
 
 	it("should return courses with faculty and questions", async () => {
-		let seed = await seedBaseData();
+		const seed = await seedBaseData();
 		const instance = await createFeedbackInstanceFixture({
 			userId: "user_admin_a",
 		});

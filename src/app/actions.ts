@@ -20,14 +20,25 @@ import { DeleteErrorCode, type DeleteResult } from "@/types/delete-error-types";
 
 const MAX_ACCESS_CODES_PER_INSTANCE = 100;
 
-type Rating = "good" | "average" | "bad";
-
 interface FeedbackResponseInput {
   courseId: string;
   questionId: string;
   rating: number; // 3 = good, 2 = average, 1 = bad
 }
 
+type PgError = {
+  cause?: {
+    code?: string;
+  };
+};
+
+function isPgError(error: unknown): error is PgError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "cause" in error
+  );
+}
 
 const isValidUuid = (value: unknown): value is string =>
   typeof value === "string" &&
@@ -316,8 +327,8 @@ export async function createFaculty(
       success: true,
       faculty: createdFaculty,
     };
-  } catch (error: any) {
-    if (error?.cause?.code === "23505") {
+  } catch (error: unknown) {
+    if (isPgError(error) && error.cause?.code === "23505") {
       return {
         success: false,
         error: "Faculty already exists",
@@ -844,9 +855,6 @@ export async function submitFeedback(
     return { success: false, error: FeedbackErrorCode.MISSING_RESPONSES };
   }
 
-  // Valid rating values
-  const validRatings: Rating[] = ["good", "average", "bad"];
-
   // Find the feedback instance
   let instance: FeedbackInstance | undefined;
   try {
@@ -1036,9 +1044,8 @@ export async function deleteFaculty(
       await db.delete(faculty).where(eq(faculty.id, facultyId));
 
       return { success: true };
-    } catch (err: any) {
-      // PostgreSQL foreign key violation (RESTRICT)
-      if (err?.cause?.code === "23503") {
+    } catch (err: unknown) {
+      if (isPgError(err) && err.cause?.code === "23503") {
         return {
           success: false,
           error: DeleteErrorCode.HAS_DEPENDENCIES,
@@ -1090,9 +1097,8 @@ export async function deleteCourseOffering(
         .where(eq(courseOfferings.id, courseOfferingId));
 
       return { success: true };
-    } catch (err: any) {
-      // FK restriction (courses table references course_offerings)
-      if (err?.cause?.code === "23503") {
+    } catch (err: unknown) {
+      if (isPgError(err) && err.cause?.code === "23503") {
         return {
           success: false,
           error: DeleteErrorCode.HAS_DEPENDENCIES,

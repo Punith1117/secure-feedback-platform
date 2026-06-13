@@ -44,7 +44,7 @@ describe("get instance by join code", () => {
   });
 
   it("should return instance for valid join code", async () => {
-    const seed = await seedBaseData();
+    await seedBaseData();
 
     const instance = await createFeedbackInstanceFixture({
       userId: "user_admin_a",

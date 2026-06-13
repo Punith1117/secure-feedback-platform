@@ -1,7 +1,16 @@
 import { db } from "@/lib/db";
 import { courseOfferings } from "@/lib/db/schema";
 
-export async function createCourseOfferingFixture(overrides?: Partial<any>) {
+type CourseOfferingOverrides = {
+  id?: string;
+  userId?: string;
+  title?: string;
+  templateId?: string;
+};
+
+export async function createCourseOfferingFixture(
+  overrides: CourseOfferingOverrides = {}
+) {
   const [co] = await db
     .insert(courseOfferings)
     .values({

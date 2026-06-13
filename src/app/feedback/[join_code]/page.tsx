@@ -1,6 +1,7 @@
 import { getCoursesByInstanceIdForStudent, getFeedbackInstanceForStudent } from "@/app/actions";
 import AccessCodeInput from "@/components/access-code-input";
 import StudentFeedbackForm from "@/components/student-feedback-form";
+import Link from "next/link";
 
 export default async function FeedbackPage({ params }: { params: Promise<{ join_code: string }> }) {
   const { join_code: joinCode } = await params;
@@ -27,12 +28,12 @@ export default async function FeedbackPage({ params }: { params: Promise<{ join_
           <h1 className="text-2xl font-semibold text-amber-800">Feedback Inactive</h1>
           <p className="mt-4 text-slate-600">This feedback instance is currently inactive and not accepting responses.</p>
           <div className="mt-6">
-            <a 
+            <Link 
               href="/"
               className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition-all hover:bg-slate-800 shadow-sm"
             >
               Go Back Home
-            </a>
+            </Link>
           </div>
         </div>
       </div>

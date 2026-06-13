@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { sql } from "drizzle-orm";
 
 import {
   createCourseOffering,
@@ -7,19 +6,17 @@ import {
   deleteCourseOffering,
 } from "@/app/actions";
 
-import { seedUsers } from "../fixtures/user.fixture";
 import { createCourseOfferingFixture } from "../fixtures/builders/course-offering.builder";
 import { seedBaseData } from "../fixtures/builders/db-seeder";
 import { randomUUID } from "crypto";
 import { createFeedbackInstanceFixture } from "../fixtures/builders/feedback-instance.builder";
-import { faculty } from "@/lib/db/schema";
 import { createFacultyFixture } from "../fixtures/builders/faculty.builder";
 import { createCourseFixture } from "../fixtures/builders/course.builder";
 import { DeleteErrorCode } from "@/types/delete-error-types";
 
 describe("create course offering", () => {
   it("should create a course offering successfully", async () => {
-    let seed = await seedBaseData();
+    const seed = await seedBaseData();
 
     const res = await createCourseOffering(
       "DBMS",
@@ -37,7 +34,7 @@ describe("create course offering", () => {
   });
 
   it("should fail when title is empty", async () => {
-    let seed = await seedBaseData();
+    const seed = await seedBaseData();
 
     const res = await createCourseOffering(
       "   ",
@@ -62,7 +59,7 @@ describe("create course offering", () => {
   });
 
   it("should fail when userId is missing", async () => {
-    let seed = await seedBaseData();
+    const seed = await seedBaseData();
 
     const res = await createCourseOffering(
       "DBMS",
@@ -76,7 +73,7 @@ describe("create course offering", () => {
 
 describe("get course offerings", async () => {	
 	it("should return offerings for a user", async () => {
-		let seed = await seedBaseData();
+		const seed = await seedBaseData();
 
     await createCourseOfferingFixture({
       userId: "user_admin_a",
@@ -119,7 +116,7 @@ describe("get course offerings", async () => {
 
 describe("delete course offering", () => {
   it("should delete a course offering successfully", async () => {
-		let seed = await seedBaseData();
+		const seed = await seedBaseData();
 
     const offering = await createCourseOfferingFixture({
       userId: "user_admin_a",
@@ -189,7 +186,7 @@ describe("delete course offering", () => {
   });
 
   it("should fail when user does not own the offering", async () => {
-		let seed = await seedBaseData();
+		const seed = await seedBaseData();
 
     const offering = await createCourseOfferingFixture({
       userId: "user_admin_a",

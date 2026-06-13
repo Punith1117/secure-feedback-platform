@@ -44,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ join_code: st
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4 text-center">
         <div className="w-full max-w-xl rounded-3xl border border-rose-200 bg-white p-8 shadow-sm">
           <h1 className="text-2xl font-semibold text-rose-800">Access Denied</h1>
-          <p className="mt-4 text-slate-600">You don't have permission to view this instance.</p>
+          <p className="mt-4 text-slate-600">You don&apos;t have permission to view this instance.</p>
         </div>
       </div>
     );

@@ -1,4 +1,4 @@
-import { boolean, index, text, pgTable, pgEnum, timestamp, uniqueIndex, uuid, varchar, primaryKey, smallint } from "drizzle-orm/pg-core";
+import { boolean, index, text, pgTable, timestamp, uniqueIndex, uuid, varchar, primaryKey, smallint } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const questionBank = pgTable("question_bank", {
