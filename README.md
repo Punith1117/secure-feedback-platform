@@ -256,12 +256,72 @@ This system ensures:
 
 ---
 
+## Continuous Integration (CI)
+
+The project uses **GitHub Actions** to enforce automated quality checks on every push and pull request to the `main` branch.
+
+This ensures that all changes are validated before merging and that the codebase remains stable and production-ready.
+
+### CI Pipeline Overview
+
+On every push/PR, the following checks are executed in sequence:
+
+* **Dependency Installation**
+
+  * Uses `pnpm install --frozen-lockfile` for deterministic installs
+
+* **Linting**
+
+  * ESLint ensures code quality and consistent patterns across the codebase
+
+* **Type Checking**
+
+  * TypeScript strict mode validation using `tsc --noEmit`
+
+* **Database Setup**
+
+  * Spins up a PostgreSQL 16 service container
+  * Runs Drizzle migrations against a dedicated test database
+
+* **Integration Test Suite**
+
+  * Executes full end-to-end integration tests using Vitest
+  * Covers core workflows including:
+
+    * Access control and authentication boundaries
+    * Transactional feedback submission
+    * Referential integrity constraints
+    * Course and faculty management logic
+
+### Key Engineering Guarantees
+
+This CI pipeline ensures:
+
+* No code can be merged if linting or type safety fails
+* Database schema and migrations are validated in CI
+* Integration tests run against a real PostgreSQL instance
+* Business-critical workflows are continuously verified
+* Reproducible builds using pinned Node.js and pnpm versions
+
+### Reliability Improvements
+
+The pipeline is optimized for real-world stability:
+
+* PostgreSQL service container with health checks
+* Deterministic environment variables for test execution
+* Isolated test database per CI run
+* Automatic migration before test execution
+* Failure-first execution order (fail fast on lint/type errors before DB/test costs)
+
+This setup significantly reduces regressions in transactional and authorization logic, which are the most critical failure points in the system.
+
+---
+
 ## Roadmap
 
 *   **Testing**: Implementation of Playwright for end-to-end testing of the submission flow.
 *   **Analytics**: Historical trend analysis for faculty performance.
 * **AI-Assisted Insights**: Automated clustering and summarization of qualitative feedback to identify recurring concerns and trends.
-*   **DevOps**: GitHub Actions for automated linting and schema validation.
 
 ---
 ## License
