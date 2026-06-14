@@ -5,7 +5,9 @@ import * as schema from "./schema";
 const connectionString = process.env.DATABASE_URL!;
 
 const client = postgres(connectionString, {
-  ssl: "require",
+  ssl: process.env.NODE_ENV === "production"
+      ? "require"
+      : false,
   max: 1,
 });
 
