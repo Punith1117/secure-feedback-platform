@@ -1,16 +1,30 @@
+import { seedBaseData } from "../builders/db-seeder";
 import { createFeedbackInstanceFixture } from "../builders/feedback-instance.builder";
 import { createFacultyFixture } from "../builders/faculty.builder";
 import { createCourseOfferingFixture } from "../builders/course-offering.builder";
 import { createCourseFixture } from "../builders/course.builder";
 
 export async function buildFullFeedbackInstanceScenario() {
-  const instance = await createFeedbackInstanceFixture();
+  const seed = await seedBaseData();
 
-  const faculty1 = await createFacultyFixture();
-  const faculty2 = await createFacultyFixture({ name: "Dr. Johnson" });
+  const accessCode = "ACCESS01";
+  const joinCode = "JOIN1234";
 
-  const offering1 = await createCourseOfferingFixture({ title: "DBMS" });
-  const offering2 = await createCourseOfferingFixture({ title: "OS" });
+  const instance = await createFeedbackInstanceFixture({
+    joinCode,
+    accessCodes: {
+      codes: [accessCode],
+    },
+  });
+
+  const faculty1 = await createFacultyFixture({
+    name: "Dr. Smith",
+  });
+
+  const offering1 = await createCourseOfferingFixture({
+    title: "DBMS",
+    templateId: seed.templateId,
+  });
 
   const course1 = await createCourseFixture({
     instanceId: instance.id,
@@ -18,16 +32,13 @@ export async function buildFullFeedbackInstanceScenario() {
     facultyId: faculty1.id,
   });
 
-  const course2 = await createCourseFixture({
-    instanceId: instance.id,
-    courseOfferingId: offering2.id,
-    facultyId: faculty2.id,
-  });
-
   return {
+    seed,
+    joinCode,
+    accessCode,
     instance,
-    faculties: [faculty1, faculty2],
-    offerings: [offering1, offering2],
-    courses: [course1, course2],
+    faculty: faculty1,
+    offering: offering1,
+    course: course1,
   };
 }
