@@ -77,6 +77,7 @@ test.describe("offline feedback submit", () => {
   test("should save feedback locally when offline", async ({ page }) => {
     await page.goto(`/feedback/${scenario.joinCode}`);
     await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("button", { name: "Submit Feedback" })).toBeVisible();
 
     await page.context().setOffline(true);
 
@@ -99,6 +100,7 @@ test.describe("offline feedback submit", () => {
   test("should auto-sync when back online and show toast", async ({ page }) => {
     await page.goto(`/feedback/${scenario.joinCode}`);
     await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("button", { name: "Submit Feedback" })).toBeVisible();
 
     await page.context().setOffline(true);
 
