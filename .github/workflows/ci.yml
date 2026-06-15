@@ -68,12 +68,6 @@ jobs:
       - name: Build test Next.js app
         run: pnpm run test:e2e:build
 
-      - name: Start test server (background)
-        run: pnpm run test:e2e:start &
-
-      - name: Wait for test server to be ready
-        run: pnpm exec wait-on http://localhost:3000
-
       - name: Run E2E tests (Playwright)
         run: pnpm run test:e2e
         env:
