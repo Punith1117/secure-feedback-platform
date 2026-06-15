@@ -51,6 +51,7 @@ jobs:
           cat <<EOF > .env.test
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_db
           BETTER_AUTH_URL=http://localhost:3000
+          BETTER_AUTH_SECRET=some-test-secret
           NEXT_PUBLIC_APP_URL=http://localhost:3000
           NODE_ENV=test
           EOF
@@ -60,6 +61,9 @@ jobs:
 
       - name: Run tests
         run: pnpm test:run
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Build test Next.js app
         run: pnpm run test:e2e:build
