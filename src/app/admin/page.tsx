@@ -41,7 +41,14 @@ export default async function AdminPage() {
         {/* Header Section */}
         <div className="text-center mb-6 sm:mb-10 pt-8 sm:pt-0">
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Admin Dashboard</h1>
-          <p className="mt-2 text-sm sm:text-lg text-slate-600">Manage your feedback infrastructure</p>
+          <a
+            href="https://github.com/Punith1117/secure-feedback-platform"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-slate-900 underline underline-offset-4 decoration-slate-400 hover:decoration-slate-900 transition-all duration-200 hover:drop-shadow-sm"          >
+            by Punith1117
+          </a>
+          <p className="mt-1 text-sm sm:text-lg text-slate-600">Manage your feedback infrastructure</p>
         </div>
 
         {/* Instances Grid Section */}
