@@ -17,6 +17,7 @@ This platform facilitates anonymous feedback collection for educational institut
 *   **Real-time Pub/Sub**: Integration with **Ably** allows the admin dashboard to receive sub-second updates as students submit feedback, without polling the database.
 *   **Decoupled Data Modeling**: The schema separates feedback instances, course offerings, and faculty members into a normalized structure, allowing for reusable templates and flexible reporting.
 *   **End-to-End Type Safety**: Shared TypeScript types across the database schema (Drizzle), server actions, and frontend components reduce runtime errors and improve developer experience.
+* **Layered Testing Architecture**: Business-critical workflows are validated through integration and end-to-end testing, covering database transactions, authorization rules, offline-first synchronization, and browser-level reliability guarantees.
 
 ---
 
@@ -26,72 +27,196 @@ This platform facilitates anonymous feedback collection for educational institut
 *   **Authentication**: Better Auth (supporting Role-Based Access Control).
 *   **Database**: PostgreSQL hosted on Neon, managed via Drizzle ORM.
 *   **Real-time**: Ably (WebSocket-based Pub/Sub).
+*   **Testing**: Vitest and Playwright.
 *   **Reporting**: jsPDF for client-side report generation.
 *   **Styling**: Tailwind CSS 4.0.
 
 ---
 
-## Integration Testing Strategy
+## Testing Strategy
 
-The platform includes a comprehensive integration test suite built with **Vitest** and a dedicated PostgreSQL test database.
+The platform adopts a layered testing approach that combines **integration testing** and **end-to-end browser testing** to validate both server-side business logic and real-world user workflows.
 
-The project emphasizes **integration testing of business-critical workflows**, where most production failures are likely to occur. This approach validates the interaction between Next.js Server Actions, Drizzle ORM, PostgreSQL constraints, authentication boundaries, and transactional logic under realistic conditions.
+This strategy provides confidence across the entire stack—from database transactions and authorization boundaries to browser storage, offline behavior, and synchronization mechanisms.
 
-### Why Integration Tests Over Unit Tests?
+The goal is to test business-critical behavior at the lowest practical layer while reserving browser tests for workflows that require real browser APIs.
 
-Many core requirements of the platform depend on database behavior rather than isolated functions:
+### Testing Philosophy
 
-* Transactional feedback submission
-* One-time access code enforcement
-* Ownership and authorization validation
-* Referential integrity across related entities
-* Aggregated reporting and analytics queries
-* Cascading and restricted delete behavior
+Different classes of failures occur at different layers:
 
-Testing these workflows against a real database provides significantly higher confidence than mocking database interactions in unit tests.
+- **Integration tests** verify business logic, database constraints, authorization rules, and transactional correctness.
+- **End-to-end tests** verify browser-specific behavior such as IndexedDB persistence, offline support, network recovery, and user experience flows.
 
-### Test Architecture
+By combining both approaches, the platform achieves high confidence without relying exclusively on slower browser-based tests.
 
-The test suite uses:
+---
 
-* **Vitest** for test execution
-* **Dedicated PostgreSQL test database**
-* **Reusable fixture builders and scenario generators**
-* **Automatic database seeding and cleanup**
-* **Mocked external services (Ably Pub/Sub)**
+## Test Architecture
+
+The test suite is organized around reusable fixtures, scenario builders, integration tests, and browser-level workflows.
 
 ```text
 tests/
-├── fixtures/
-│   ├── base/
-│   ├── builders/
-│   └── scenarios/
-├── integration/
+├── e2e
+│   └── submit-offline.spec.ts
+├── fixtures
+│   ├── base
+│   │   ├── question.fixtures.ts
+│   │   ├── template.fixtures.ts
+│   │   └── user.fixtures.ts
+│   ├── builders
+│   │   ├── course-offering.builder.ts
+│   │   ├── course.builder.ts
+│   │   ├── db-seeder.ts
+│   │   ├── faculty.builder.ts
+│   │   └── feedback-instance.builder.ts
+│   ├── scenarios
+│   │   └── feedback-instance.scenario.ts
+│   └── user.fixture.ts
+├── integration
 │   ├── access-code.test.ts
 │   ├── course-management.test.ts
 │   ├── course-offering.test.ts
 │   ├── faculty.test.ts
 │   ├── feedback-instance.test.ts
 │   └── submit-feedback.test.ts
-└── setup/
+└── setup
+    ├── db.ts
+    └── setup-offline-feedback.ts
 ```
+
+### Shared Testing Infrastructure
+
+The test environment includes:
+
+- Dedicated PostgreSQL test database
+- Reusable fixture builders and scenario generators
+- Automatic database seeding and cleanup
+- Isolated test execution
+- Mocked external services (Ably Pub/Sub)
+- CI-driven execution via GitHub Actions
+
+---
+
+## Integration Testing
+
+The integration suite is built with **Vitest** and validates business-critical workflows against a real PostgreSQL database.
+
+Rather than testing isolated functions in complete isolation, these tests verify the interaction between:
+
+- Next.js Server Actions
+- Drizzle ORM
+- PostgreSQL constraints
+- Authentication and authorization logic
+- Transactional database operations
+
+### Why Integration Tests?
+
+Many of the platform's requirements depend on database behavior rather than pure application code:
+
+- Transactional feedback submission
+- One-time access code enforcement
+- Ownership and authorization validation
+- Referential integrity across entities
+- Aggregated reporting queries
+- Cascading and restricted delete behavior
+
+Testing against a real database provides significantly higher confidence than heavily mocked unit tests.
 
 ### Covered Workflows
 
 The integration suite validates:
 
-* Feedback instance creation, updates, activation, and deletion
-* Access code generation and retrieval
-* Course and faculty management
-* Authorization and ownership boundaries
-* Anonymous feedback submission lifecycle
-* Transactional access code consumption
-* Aggregated reporting and analytics queries
-* Error handling for invalid or unauthorized operations
+- Feedback instance creation, updates, activation, and deletion
+- Access code generation and retrieval
+- Course and faculty management
+- Authorization and ownership boundaries
+- Anonymous feedback submission lifecycle
+- Transactional access code consumption
+- Aggregated reporting and analytics queries
+- Error handling for invalid or unauthorized operations
 
-### Engineering Benefits
+---
 
-The result is a high-confidence validation layer that catches database, transaction, and authorization issues before deployment while preserving rapid development feedback cycles.
+## Browser End-to-End Testing
+
+The platform also includes **Playwright-based end-to-end tests** that execute inside a real Chromium browser.
+
+While integration tests validate backend correctness, Playwright validates workflows that depend on browser APIs, client-side storage, and network state transitions.
+
+### Why End-to-End Tests?
+
+Several critical platform requirements depend on browser APIs and client-side state management:
+
+- Offline feedback submission
+- IndexedDB persistence
+- Network connectivity transitions
+- Automatic synchronization after reconnecting
+- User-facing reliability guarantees
+- Toast notifications and synchronization feedback
+
+These behaviors cannot be fully validated through server-side testing alone.
+
+### Offline-First Workflow Validation
+
+The Playwright suite validates the complete offline submission pipeline used by students.
+
+#### Scenario 1 - Offline Submission
+
+The test simulates a student losing connectivity before submitting feedback.
+
+The workflow verifies that:
+
+- The browser enters offline mode
+- Feedback is accepted locally
+- The user receives an offline confirmation message
+- The submission is persisted to IndexedDB
+- The queued item is marked as `pending`
+
+#### Scenario 2 - Automatic Recovery & Synchronization
+
+The test then restores network connectivity.
+
+The workflow verifies that:
+
+- The browser reconnects successfully
+- The synchronization engine automatically executes
+- Progress notifications are displayed
+- Feedback is synchronized to the server
+- The local queue item transitions from `pending` to `synced`
+
+### Browser-Level Validation
+
+The tests directly inspect IndexedDB state to verify:
+
+- Local persistence correctness
+- Queue lifecycle transitions
+- Sync status updates
+- Eventual consistency guarantees
+
+This provides strong confidence that student responses are never lost during temporary network interruptions.
+
+---
+
+## Continuous Integration
+
+All tests are executed automatically through GitHub Actions on every push and pull request.
+
+The CI pipeline performs:
+
+1. Dependency installation
+2. Linting
+3. Type checking
+4. PostgreSQL test database setup
+5. Database migrations
+6. Integration test execution (Vitest)
+7. Playwright browser installation
+8. Application build
+9. End-to-end test execution (Playwright)
+10. Upload of Playwright failure artifacts (HTML reports, traces, screenshots, and videos)
+
+> This ensures that database integrity, authorization boundaries, transactional workflows, and browser-level offline synchronization behavior remain continuously validated before code is merged.
 
 ---
 
@@ -213,6 +338,7 @@ This system ensures:
 - Toast notifications summarize sync results (success/failure counts)
 
 ### Security Design
+
 1.  **Access Control**: Administrative routes are protected via server-side session validation.
 2.  **Anonymization**: Submissions are decoupled from student identities. While an access code proves authorization, it is not linked back to a user profile in the database.
 3.  **One-Time Use**: The system enforces a strict "claim-and-consume" logic within a transaction to prevent replay attacks or multiple submissions with the same code.
@@ -254,72 +380,11 @@ This system ensures:
     pnpm dev
     ```
 
----
-
-## Continuous Integration (CI)
-
-The project uses **GitHub Actions** to enforce automated quality checks on every push and pull request to the `main` branch.
-
-This ensures that all changes are validated before merging and that the codebase remains stable and production-ready.
-
-### CI Pipeline Overview
-
-On every push/PR, the following checks are executed in sequence:
-
-* **Dependency Installation**
-
-  * Uses `pnpm install --frozen-lockfile` for deterministic installs
-
-* **Linting**
-
-  * ESLint ensures code quality and consistent patterns across the codebase
-
-* **Type Checking**
-
-  * TypeScript strict mode validation using `tsc --noEmit`
-
-* **Database Setup**
-
-  * Spins up a PostgreSQL 16 service container
-  * Runs Drizzle migrations against a dedicated test database
-
-* **Integration Test Suite**
-
-  * Executes full end-to-end integration tests using Vitest
-  * Covers core workflows including:
-
-    * Access control and authentication boundaries
-    * Transactional feedback submission
-    * Referential integrity constraints
-    * Course and faculty management logic
-
-### Key Engineering Guarantees
-
-This CI pipeline ensures:
-
-* No code can be merged if linting or type safety fails
-* Database schema and migrations are validated in CI
-* Integration tests run against a real PostgreSQL instance
-* Business-critical workflows are continuously verified
-* Reproducible builds using pinned Node.js and pnpm versions
-
-### Reliability Improvements
-
-The pipeline is optimized for real-world stability:
-
-* PostgreSQL service container with health checks
-* Deterministic environment variables for test execution
-* Isolated test database per CI run
-* Automatic migration before test execution
-* Failure-first execution order (fail fast on lint/type errors before DB/test costs)
-
-This setup significantly reduces regressions in transactional and authorization logic, which are the most critical failure points in the system.
 
 ---
 
 ## Roadmap
 
-*   **Testing**: Implementation of Playwright for end-to-end testing of the submission flow.
 *   **Analytics**: Historical trend analysis for faculty performance.
 * **AI-Assisted Insights**: Automated clustering and summarization of qualitative feedback to identify recurring concerns and trends.
 
