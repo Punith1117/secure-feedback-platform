@@ -35,167 +35,73 @@ This platform facilitates anonymous feedback collection for educational institut
 
 ## Testing Strategy
 
-The platform adopts a layered testing approach that combines **integration testing** and **end-to-end browser testing** to validate both server-side business logic and real-world user workflows.
+The platform uses a layered testing strategy combining **integration testing** and **end-to-end (E2E) testing** to validate both backend business logic and real-world user workflows.
 
-This strategy provides confidence across the entire stack—from database transactions and authorization boundaries to browser storage, offline behavior, and synchronization mechanisms.
+* **Integration tests (Vitest)** verify server actions, database transactions, authorization rules, and data integrity against a real PostgreSQL database.
+* **E2E tests (Playwright)** verify browser-specific behavior such as offline submissions, IndexedDB persistence, synchronization, and network recovery.
 
-The goal is to test business-critical behavior at the lowest practical layer while reserving browser tests for workflows that require real browser APIs.
+This approach tests business-critical logic at the lowest practical layer while reserving browser tests for workflows that depend on real browser APIs.
 
-### Testing Philosophy
-
-Different classes of failures occur at different layers:
-
-- **Integration tests** verify business logic, database constraints, authorization rules, and transactional correctness.
-- **End-to-end tests** verify browser-specific behavior such as IndexedDB persistence, offline support, network recovery, and user experience flows.
-
-By combining both approaches, the platform achieves high confidence without relying exclusively on slower browser-based tests.
-
----
-
-## Test Architecture
-
-The test suite is organized around reusable fixtures, scenario builders, integration tests, and browser-level workflows.
+### Test Architecture
 
 ```text
 tests/
-├── e2e
-│   └── submit-offline.spec.ts
-├── fixtures
-│   ├── base
-│   │   ├── question.fixtures.ts
-│   │   ├── template.fixtures.ts
-│   │   └── user.fixtures.ts
-│   ├── builders
-│   │   ├── course-offering.builder.ts
-│   │   ├── course.builder.ts
-│   │   ├── db-seeder.ts
-│   │   ├── faculty.builder.ts
-│   │   └── feedback-instance.builder.ts
-│   ├── scenarios
-│   │   └── feedback-instance.scenario.ts
-│   └── user.fixture.ts
-├── integration
-│   ├── access-code.test.ts
-│   ├── course-management.test.ts
-│   ├── course-offering.test.ts
-│   ├── faculty.test.ts
-│   ├── feedback-instance.test.ts
-│   └── submit-feedback.test.ts
-└── setup
-    ├── db.ts
-    └── setup-offline-feedback.ts
+├── e2e/
+├── fixtures/
+│   ├── base/
+│   ├── builders/
+│   └── scenarios/
+├── integration/
+└── setup/
 ```
 
-### Shared Testing Infrastructure
+The testing infrastructure includes:
 
-The test environment includes:
+* Dedicated PostgreSQL test database
+* Reusable fixtures and scenario builders
+* Automatic database setup and cleanup
+* Mocked external services (Ably)
+* CI execution through GitHub Actions
 
-- Dedicated PostgreSQL test database
-- Reusable fixture builders and scenario generators
-- Automatic database seeding and cleanup
-- Isolated test execution
-- Mocked external services (Ably Pub/Sub)
-- CI-driven execution via GitHub Actions
+### Integration Testing
 
----
+The integration suite validates interactions between:
 
-## Integration Testing
+* Next.js Server Actions
+* Drizzle ORM
+* PostgreSQL
+* Authentication and authorization logic
 
-The integration suite is built with **Vitest** and validates business-critical workflows against a real PostgreSQL database.
+Key workflows covered:
 
-Rather than testing isolated functions in complete isolation, these tests verify the interaction between:
+* Feedback instance lifecycle management
+* Access code generation and consumption
+* Course and faculty management
+* Ownership and authorization enforcement
+* Anonymous feedback submission
+* Transactional consistency
+* Aggregated reporting queries
+* Error and edge-case handling
 
-- Next.js Server Actions
-- Drizzle ORM
-- PostgreSQL constraints
-- Authentication and authorization logic
-- Transactional database operations
+#### Why Integration Testing Over Unit Tests
 
-### Why Integration Tests?
+This system prioritizes integration tests because most critical behavior depends on database state, transactions, and framework-level interactions, which unit tests cannot reliably capture. Validations like access-code consumption, ownership rules, and transactional feedback submission only hold meaning when executed against a real PostgreSQL database with ORM and server actions involved.
 
-Many of the platform's requirements depend on database behavior rather than pure application code:
+### End-to-End Testing
 
-- Transactional feedback submission
-- One-time access code enforcement
-- Ownership and authorization validation
-- Referential integrity across entities
-- Aggregated reporting queries
-- Cascading and restricted delete behavior
+Playwright tests execute in a real browser to validate workflows that depend on browser APIs and client-side state.
 
-Testing against a real database provides significantly higher confidence than heavily mocked unit tests.
+The suite verifies:
 
-### Covered Workflows
+* Offline feedback submission
+* IndexedDB persistence
+* Network connectivity transitions
+* Automatic synchronization after reconnection
+* User-facing status and progress notifications
 
-The integration suite validates:
+A primary workflow simulates a student submitting feedback while offline, confirms the response is stored locally as `pending`, restores connectivity, and verifies automatic synchronization to the server with the item transitioning to `synced`.
 
-- Feedback instance creation, updates, activation, and deletion
-- Access code generation and retrieval
-- Course and faculty management
-- Authorization and ownership boundaries
-- Anonymous feedback submission lifecycle
-- Transactional access code consumption
-- Aggregated reporting and analytics queries
-- Error handling for invalid or unauthorized operations
-
----
-
-## Browser End-to-End Testing
-
-The platform also includes **Playwright-based end-to-end tests** that execute inside a real Chromium browser.
-
-While integration tests validate backend correctness, Playwright validates workflows that depend on browser APIs, client-side storage, and network state transitions.
-
-### Why End-to-End Tests?
-
-Several critical platform requirements depend on browser APIs and client-side state management:
-
-- Offline feedback submission
-- IndexedDB persistence
-- Network connectivity transitions
-- Automatic synchronization after reconnecting
-- User-facing reliability guarantees
-- Toast notifications and synchronization feedback
-
-These behaviors cannot be fully validated through server-side testing alone.
-
-### Offline-First Workflow Validation
-
-The Playwright suite validates the complete offline submission pipeline used by students.
-
-#### Scenario 1 - Offline Submission
-
-The test simulates a student losing connectivity before submitting feedback.
-
-The workflow verifies that:
-
-- The browser enters offline mode
-- Feedback is accepted locally
-- The user receives an offline confirmation message
-- The submission is persisted to IndexedDB
-- The queued item is marked as `pending`
-
-#### Scenario 2 - Automatic Recovery & Synchronization
-
-The test then restores network connectivity.
-
-The workflow verifies that:
-
-- The browser reconnects successfully
-- The synchronization engine automatically executes
-- Progress notifications are displayed
-- Feedback is synchronized to the server
-- The local queue item transitions from `pending` to `synced`
-
-### Browser-Level Validation
-
-The tests directly inspect IndexedDB state to verify:
-
-- Local persistence correctness
-- Queue lifecycle transitions
-- Sync status updates
-- Eventual consistency guarantees
-
-This provides strong confidence that student responses are never lost during temporary network interruptions.
+The tests also inspect IndexedDB directly to validate queue state transitions and ensure responses are not lost during temporary network interruptions.
 
 ---
 
