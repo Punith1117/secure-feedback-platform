@@ -29,6 +29,8 @@ Student submissions are persisted locally when offline and automatically synchro
   <img src="./public/gif/realtime_offline_sync.gif" alt="Offline Sync and Realtime Updates" width="800">
 </p>
 
+For a full walkthrough of this workflow, [watch the complete demo here ](https://www.linkedin.com/posts/punith-r-yes_nextjs-vercel-typescript-ugcPost-7472625248627044352-LgRb/)
+
 ## Core Engineering Features
 
 *   **Transactional Integrity**: Feedback submissions are processed within database transactions to ensure that an access code is marked as "used" if and only if the response data is successfully recorded.
