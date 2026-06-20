@@ -11,7 +11,25 @@ A web-based system for collecting anonymous student feedback using one-time acce
 
 This platform facilitates anonymous feedback collection for educational institutions. It is designed to solve two primary problems: ensuring the integrity of anonymous responses and providing immediate, real-time feedback to administrators.
 
-### Core Engineering Features
+## Feature Demonstrations
+
+### Admin Setup Workflow
+
+Creating a feedback instance, configuring courses, generating access codes, and preparing a feedback session.
+
+<p align="center">
+  <img src="./public/gif/setup_admin.gif" alt="Admin Setup Workflow" width="800">
+</p>
+
+### Real-Time Dashboard & Offline Sync
+
+Student submissions are persisted locally when offline and automatically synchronized when connectivity is restored. The admin dashboard receives updates in real time.
+
+<p align="center">
+  <img src="./public/gif/realtime_offline_sync.gif" alt="Offline Sync and Realtime Updates" width="800">
+</p>
+
+## Core Engineering Features
 
 *   **Transactional Integrity**: Feedback submissions are processed within database transactions to ensure that an access code is marked as "used" if and only if the response data is successfully recorded.
 *   **Real-time Pub/Sub**: Integration with **Ably** allows the admin dashboard to receive sub-second updates as students submit feedback, without polling the database.
@@ -36,6 +54,10 @@ This platform facilitates anonymous feedback collection for educational institut
 ## Testing Strategy
 
 The platform uses a layered testing strategy combining **integration testing** and **end-to-end (E2E) testing** to validate both backend business logic and real-world user workflows.
+
+<p align="center">
+  <img src="./public/gif/vitest_playwright_actions.gif" alt="Testing Infrastructure" width="800">
+</p>
 
 * **Integration tests (Vitest)** verify server actions, database transactions, authorization rules, and data integrity against a real PostgreSQL database.
 * **E2E tests (Playwright)** verify browser-specific behavior such as offline submissions, IndexedDB persistence, synchronization, and network recovery.
