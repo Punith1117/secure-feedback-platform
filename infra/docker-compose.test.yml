@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: secure_feedback_pg16
+    restart: always
+    environment:
+      POSTGRES_USER: sf_app
+      POSTGRES_PASSWORD: sf_app
+      POSTGRES_DB: secure_feedback_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_test_data:/var/lib/postgresql/data
+
+volumes:
+  pg_test_data:
