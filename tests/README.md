@@ -7,8 +7,16 @@ This project uses a separate PostgreSQL 16 test database + Vitest + Playwright.
 ## 1. Prerequisites
 
 - Node.js + pnpm installed
-- Podman
+- Podman + Podman compose
 - `.env.test` created from `.env.test.example`
+
+Install Podman Compose(Fedora):
+
+    sudo dnf install podman-compose
+
+Verify if Compose is available:
+
+    podman compose version
 
 ---
 
@@ -18,7 +26,7 @@ This project uses a separate PostgreSQL 16 test database + Vitest + Playwright.
 
 Install Playwright browsers:
 
-    pnpm exec playwright install
+    pnpm exec playwright install chromium
 
 ---
 
